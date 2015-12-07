@@ -28,8 +28,8 @@ public class ELMIO implements KWP2000IO {
     @Override
     public void startKWPIO(byte initAddress, byte controllerAddress) throws KWPException {
         try {
-            String controllerString = String.format("%02X ", initAddress);
-            String addressString = String.format("%02X", controllerAddress);
+            final String controllerString = String.format("%02X ", initAddress);
+            final String addressString = String.format("%02X", controllerAddress);
             writeString("AT Z"); // Reset
             Thread.sleep(250);
             bufferData();
@@ -99,11 +99,10 @@ public class ELMIO implements KWP2000IO {
 
     @Override
     public void writeBytes(byte[] bytesToWrite) throws KWPException {
-        String hexString = HexUtil.bytesToHexString(bytesToWrite);
+        final String hexString = HexUtil.bytesToHexString(bytesToWrite);
         try {
             m_out.write(hexString.getBytes(Charset.forName("US-ASCII")));
             Log.d("ELMIO", "Sent byte data " + hexString);
-            return;
         } catch (IOException e) {
             Log.d("ELMIO", "Failed to send byte data " + e.toString());
             throw new KWPException("Failed to write ELM byte data to stream!");
@@ -122,7 +121,7 @@ public class ELMIO implements KWP2000IO {
                     Thread.yield();
                     continue;
                 }
-                byte dataIn = (byte)m_in.read();
+                final byte dataIn = (byte)m_in.read();
                 if (dataIn == ELM_TERMINAL) {
                     break;
                 }
@@ -132,7 +131,7 @@ public class ELMIO implements KWP2000IO {
                 throw new KWPException("Failed to read from buffer!");
             }
         }
-        String[] currentLines = inputBuffer.toString().split("\r");
+        final String[] currentLines = inputBuffer.toString().split("\r");
         for (String line : currentLines) {
             if (line.trim().length() > 0) {
                 m_inputLines.add(line.trim());
@@ -146,17 +145,7 @@ public class ELMIO implements KWP2000IO {
         if (!byteLine.matches("([0-9A-F])+")) { // Check for hexish-ness
             return new byte[0];
         }
-        if(byteLine.startsWith("AT")) {
-            return new byte[0];
-        }
-        if(byteLine.startsWith("ELM327")) {
-            return new byte[0];
-        }
-        if(byteLine.startsWith("BUS")) {
-            return new byte[0];
-        }
-
-        int len = byteLine.length();
+        final int len = byteLine.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(byteLine.charAt(i), 16) << 4)

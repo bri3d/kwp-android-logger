@@ -80,9 +80,9 @@ public class DiagnosticsService extends PermanentService {
         try {
             if(!connectBluetooth()) return;
             connectKWP2000();
-            m_isConnected = true;
             ECUIdentification ecuID = m_kwp.readECUIdentification();
             Log.d("KWP", "Got string " + ecuID.hardwareNumber + " for hardware number");
+            m_isConnected = true;
             Intent broadcastIntent = new Intent();
             broadcastIntent.setAction(MainActivity.DiagnosticReceiver.ECU_RESP);
             broadcastIntent.putExtra(ECU_ID_STRING, ecuID.hardwareNumber);
