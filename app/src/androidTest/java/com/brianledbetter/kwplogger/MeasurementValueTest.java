@@ -25,4 +25,10 @@ public class MeasurementValueTest extends TestCase {
         assertEquals(testResult.stringLabel, "%");
         assertEquals(testResult.stringValue, "0.468");
     }
+
+    public void test1BDegrees() {
+        MeasurementValue testResult = MeasurementValue.parseValue(new byte[] { 0x1B, 0x01, -12 });
+        assertEquals(testResult.stringLabel, "deg BTDC");
+        assertEquals(testResult.stringValue, "1");
+    }
 }

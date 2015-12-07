@@ -212,7 +212,6 @@ public class MeasurementValue {
                 public MeasurementValue parseBytes(int[] bytes) {
                     String unit;
                     if (bytes[1] > 128) {
-
                         unit = "deg BTDC";
                     }
                     else {
