@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">KWPLogger</string>
+    <string name="main_activity_name">Vehicle Data</string>
+    <string name="not_connected_label">Not Connected</string>
+    <string name="transmission_temperature_label">Transmission Temperature</string>
+    <string name="part_number_label">Part Number</string>
+    <string name="action_settings">Settings</string>
+</resources>
