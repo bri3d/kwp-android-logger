@@ -7,4 +7,8 @@
     <string name="action_settings">Settings</string>
     <string name="connectionLabel">Connect</string>
     <string name="disconnectionLabel">Disconnect</string>
+    <string name="group_selector_label">Group</string>
+    <string name="init_address_label">KWP Init Address</string>
+    <string name="controller_address_label">KWP Controller Address</string>
+    <string name="action_measurements">Measurements</string>
 </resources>

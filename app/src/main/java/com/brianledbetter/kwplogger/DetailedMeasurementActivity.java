@@ -1,30 +1,36 @@
 package com.brianledbetter.kwplogger;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.widget.ToggleButton;
+
+import com.brianledbetter.kwplogger.KWP2000.MeasurementValue;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends ActionBarActivity {
-    ScheduledExecutorService m_pollTemperature = Executors.newSingleThreadScheduledExecutor();
+/**
+ * Created by b3d on 12/7/15.
+ */
+public class DetailedMeasurementActivity extends Activity {
+    ScheduledExecutorService m_pollMeasurement = Executors.newSingleThreadScheduledExecutor();
     DiagnosticReceiver m_receiver = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_measurement);
         ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -35,6 +41,10 @@ public class MainActivity extends ActionBarActivity {
                 }
             }
         });
+        NumberPicker numberPicker = (NumberPicker) findViewById(R.id.numberPicker);
+        numberPicker.setMinValue(1);
+        numberPicker.setMaxValue(255);
+        numberPicker.setValue(1);
     }
 
     @Override
@@ -51,25 +61,7 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            Intent intent = new Intent(this, DetailedMeasurementActivity.class);
-            startActivity(intent);
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        return false;
     }
 
     public void startConnection() {
@@ -82,13 +74,15 @@ public class MainActivity extends ActionBarActivity {
 
         Intent startIntent = new Intent(this, DiagnosticsService.class);
         startIntent.setAction(DiagnosticsService.START_DIAGNOSTICS_SERVICE);
-        startIntent.putExtra(DiagnosticsService.INIT_ADDRESS, 0x2);
-        startIntent.putExtra(DiagnosticsService.REMOTE_ADDRESS, 0x1A);
+        String initAddress = ((EditText)findViewById(R.id.initAddress)).getText().toString();
+        String remoteAddress = ((EditText)findViewById(R.id.controllerAddress)).getText().toString();
+        startIntent.putExtra(DiagnosticsService.INIT_ADDRESS, Integer.parseInt(initAddress));
+        startIntent.putExtra(DiagnosticsService.REMOTE_ADDRESS, Integer.parseInt(remoteAddress));
         startService(startIntent);
     }
 
     public void stopConnection() {
-        m_pollTemperature.shutdown();
+        m_pollMeasurement.shutdown();
         Intent stopIntent = new Intent(this, DiagnosticsService.class);
         stopIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
         stopService(stopIntent);
@@ -105,12 +99,13 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void schedulePolling() {
-        m_pollTemperature.scheduleAtFixedRate
+        m_pollMeasurement.scheduleAtFixedRate
                 (new Runnable() {
                     public void run() {
                         Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);
                         startIntent.setAction(DiagnosticsService.POLL_DIAGNOSTICS_SERVICE);
-                        startIntent.putExtra(DiagnosticsService.MEASUREMENT_GROUP, 0x6);
+                        NumberPicker numberPicker = (NumberPicker) findViewById(R.id.numberPicker);
+                        startIntent.putExtra(DiagnosticsService.MEASUREMENT_GROUP, numberPicker.getValue());
                         startService(startIntent);
                     }
                 }, 0, 250, TimeUnit.MILLISECONDS);
@@ -127,11 +122,16 @@ public class MainActivity extends ActionBarActivity {
                 ecuIDView.setText(intent.getStringExtra(DiagnosticsService.ECU_ID_STRING));
                 schedulePolling();
             } else if(intent.getAction() == MEASUREMENT_RESP) {
-                TextView valueView = (TextView)findViewById(R.id.valueValue);
                 ParcelableMeasurementValues values = intent.getParcelableExtra(DiagnosticsService.VALUE_STRING);
-                valueView.setText(values.measurementValues.get(0).stringValue);
-                valueView = (TextView)findViewById(R.id.valueLabel);
-                valueView.setText(values.measurementValues.get(0).stringLabel);
+                for (int i = 0; i < values.measurementValues.size(); i++) {
+                    TextView valueLabel = (TextView)findViewById(getResources().getIdentifier("value" + (i + 1), "id", getPackageName()));
+                    TextView labelLabel = (TextView)findViewById(getResources().getIdentifier("label" + (i + 1), "id", getPackageName()));
+                    MeasurementValue value = values.measurementValues.get(i);
+                    if (valueLabel != null) // Guards against too many measured values coming back.
+                        valueLabel.setText(value.stringValue);
+                    if (labelLabel != null)
+                        labelLabel.setText(value.stringLabel);
+                }
             }
         }
     }
