@@ -31,7 +31,10 @@ public class DiagnosticsService extends PermanentService {
 
     public static final String ECU_ID_STRING = "ecuID";
     public static final String VALUE_STRING = "value";
-    public static final String LABEL_STRING = "label";
+
+    public static final String MEASUREMENT_GROUP = "measurementGroup";
+    public static final String INIT_ADDRESS = "initAddress";
+    public static final String REMOTE_ADDRESS = "remoteAddress";
 
     // this is the "well known" UUID for Bluetooth SPP (Serial Profile).
     private static final UUID SPP_UUID =
@@ -49,12 +52,15 @@ public class DiagnosticsService extends PermanentService {
     protected void onHandleIntent(Intent intent) {
         if (intent == null) return;
         if (intent.getAction().equals(START_DIAGNOSTICS_SERVICE)) {
+            int initAddress = intent.getIntExtra(INIT_ADDRESS, 0x1);
+            int remoteAddress = intent.getIntExtra(REMOTE_ADDRESS, 0x10);
             Log.d("KWP", "Starting connection!");
-            startConnection();
+            startConnection(initAddress, remoteAddress);
         }
         if (intent.getAction().equals(POLL_DIAGNOSTICS_SERVICE)) {
-            Log.d("KWP", "Polling...");
-            pollData();
+            int measurementGroup = intent.getIntExtra(MEASUREMENT_GROUP, 0x1);
+            Log.d("KWP", "Polling... " + measurementGroup);
+            pollData(measurementGroup);
         }
         if (intent.getAction().equals(END_DIAGNOSTICS_SERVICE)) {
             Log.d("KWP", "Ending connection...");
@@ -77,9 +83,9 @@ public class DiagnosticsService extends PermanentService {
         }
     }
 
-    private void startConnection() {
+    private void startConnection(int initAddress, int remoteAddress) {
         try {
-            if(!connectBluetooth()) return;
+            if(!connectBluetooth(initAddress, remoteAddress)) return;
             connectKWP2000();
             ECUIdentification ecuID = m_kwp.readECUIdentification();
             Log.d("KWP", "Got string " + ecuID.hardwareNumber + " for hardware number");
@@ -95,7 +101,7 @@ public class DiagnosticsService extends PermanentService {
         }
     }
 
-    private boolean connectBluetooth() {
+    private boolean connectBluetooth(int initAddress, int remoteAddress) {
         BluetoothAdapter b = BluetoothAdapter.getDefaultAdapter();
         Set<BluetoothDevice> pairedDevices = b.getBondedDevices();
         if(pairedDevices.size() == 0)
@@ -130,7 +136,7 @@ public class DiagnosticsService extends PermanentService {
             }
         }
         try {
-            m_ELMKWP.startKWPIO((byte)0x02, (byte)0x1A);
+            m_ELMKWP.startKWPIO((byte)initAddress, (byte)remoteAddress);
         } catch (KWPException e) {
             Log.d("KWP", "Connection failed!");
             return false;
@@ -148,18 +154,21 @@ public class DiagnosticsService extends PermanentService {
         m_kwp.startVWDiagnosticSession();
     }
 
-    private void pollData() {
+    private void pollData(int measurementIdentifier) {
         if(!m_isConnected) {
             return;
         }
         try {
-            List<MeasurementValue> measurementValues = m_kwp.readIdentifier(0x6);
+            List<MeasurementValue> measurementValues = m_kwp.readIdentifier(measurementIdentifier);
             if (measurementValues.size() > 0) {
-                Log.d("KWP", "Got value " + measurementValues.get(0).stringValue + " " + measurementValues.get(0).stringLabel + " for identifier 6");
+                Log.d("KWP", "Got values : ");
+                for (int i = 0; i < measurementValues.size(); i++)
+                {
+                    Log.d("KWP", "Value " + i + " : " + measurementValues.get(i).stringValue + " " + measurementValues.get(i).stringLabel + " for identifier " + measurementIdentifier);
+                }
                 Intent broadcastIntent = new Intent();
-                broadcastIntent.setAction(MainActivity.DiagnosticReceiver.TEMP_RESP);
-                broadcastIntent.putExtra(VALUE_STRING, measurementValues.get(0).stringValue);
-                broadcastIntent.putExtra(LABEL_STRING, measurementValues.get(0).stringLabel);
+                broadcastIntent.setAction(MainActivity.DiagnosticReceiver.MEASUREMENT_RESP);
+                broadcastIntent.putExtra(VALUE_STRING, new ParcelableMeasurementValues(measurementValues));
                 broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
                 sendBroadcast(broadcastIntent);
             }

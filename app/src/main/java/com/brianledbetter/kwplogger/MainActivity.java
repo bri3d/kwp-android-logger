@@ -80,6 +80,8 @@ public class MainActivity extends ActionBarActivity {
 
         Intent startIntent = new Intent(this, DiagnosticsService.class);
         startIntent.setAction(DiagnosticsService.START_DIAGNOSTICS_SERVICE);
+        startIntent.putExtra(DiagnosticsService.INIT_ADDRESS, 0x2);
+        startIntent.putExtra(DiagnosticsService.REMOTE_ADDRESS, 0x1A);
         startService(startIntent);
     }
 
@@ -93,7 +95,7 @@ public class MainActivity extends ActionBarActivity {
     private void registerReceivers() {
         IntentFilter ecuFilter = new IntentFilter(DiagnosticReceiver.ECU_RESP);
         ecuFilter.addCategory(Intent.CATEGORY_DEFAULT);
-        IntentFilter dataFilter = new IntentFilter(DiagnosticReceiver.TEMP_RESP);
+        IntentFilter dataFilter = new IntentFilter(DiagnosticReceiver.MEASUREMENT_RESP);
         dataFilter.addCategory(Intent.CATEGORY_DEFAULT);
         m_receiver = new DiagnosticReceiver();
         registerReceiver(m_receiver, ecuFilter);
@@ -106,6 +108,7 @@ public class MainActivity extends ActionBarActivity {
                     public void run() {
                         Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);
                         startIntent.setAction(DiagnosticsService.POLL_DIAGNOSTICS_SERVICE);
+                        startIntent.putExtra(DiagnosticsService.MEASUREMENT_GROUP, 0x6);
                         startService(startIntent);
                     }
                 }, 0, 250, TimeUnit.MILLISECONDS);
@@ -113,7 +116,7 @@ public class MainActivity extends ActionBarActivity {
 
     public class DiagnosticReceiver extends BroadcastReceiver {
         public static final String ECU_RESP = "com.brianledbetter.kwplogger.ECU_ID";
-        public static final String TEMP_RESP = "com.brianledbetter.kwplogger.TRANS_TEMP";
+        public static final String MEASUREMENT_RESP = "com.brianledbetter.kwplogger.MEASUREMENT";
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -121,11 +124,12 @@ public class MainActivity extends ActionBarActivity {
                 TextView ecuIDView = (TextView)findViewById(R.id.partNumber);
                 ecuIDView.setText(intent.getStringExtra(DiagnosticsService.ECU_ID_STRING));
                 schedulePolling();
-            } else if(intent.getAction() == TEMP_RESP) {
+            } else if(intent.getAction() == MEASUREMENT_RESP) {
                 TextView valueView = (TextView)findViewById(R.id.valueValue);
-                valueView.setText(intent.getStringExtra(DiagnosticsService.VALUE_STRING));
+                ParcelableMeasurementValues values = intent.getParcelableExtra(DiagnosticsService.VALUE_STRING);
+                valueView.setText(values.measurementValues.get(0).stringValue);
                 valueView = (TextView)findViewById(R.id.valueLabel);
-                valueView.setText(intent.getStringExtra(DiagnosticsService.LABEL_STRING));
+                valueView.setText(values.measurementValues.get(0).stringLabel);
             }
         }
     }

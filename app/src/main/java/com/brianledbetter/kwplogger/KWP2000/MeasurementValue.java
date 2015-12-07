@@ -256,6 +256,50 @@ public class MeasurementValue {
                     return new MeasurementValue(Double.toString(out), "deg C");
                 }
             });
+            put((byte)0x21, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(int[] bytes) {
+                    if (bytes[0] == 0) bytes[0] = 1;
+                    double out = 100 * bytes[1] / bytes[0];
+                    return new MeasurementValue(Double.toString(out), "%");
+                }
+            });
+            put((byte)0x22, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(int[] bytes) {
+                    double out = (bytes[1] - 128) * bytes[0] / 100;
+                    return new MeasurementValue(Double.toString(out), "deg kW");
+                }
+            });
+            put((byte)0x23, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(int[] bytes) {
+                    double out = bytes[1] * bytes[0] / 100;
+                    return new MeasurementValue(Double.toString(out), "L/h");
+                }
+            });
+            put((byte)0x24, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(int[] bytes) {
+                    double out = bytes[1] * 10 + bytes[0] * 2560;
+                    return new MeasurementValue(Double.toString(out), "km");
+                }
+            });
+            // 0x25 unknown
+            put((byte)0x26, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(int[] bytes) {
+                    double out = (bytes[1] - 128) * bytes[0] / 1000;
+                    return new MeasurementValue(Double.toString(out), "deg k/w");
+                }
+            });
+            put((byte)0x27, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(int[] bytes) {
+                    double out = (bytes[1] / 256) * bytes[0];
+                    return new MeasurementValue(Double.toString(out), "mg/h");
+                }
+            });
         }
     };
 
