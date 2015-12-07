@@ -5,4 +5,6 @@
     <string name="transmission_temperature_label">Transmission Temperature</string>
     <string name="part_number_label">Part Number</string>
     <string name="action_settings">Settings</string>
+    <string name="connectionLabel">Connect</string>
+    <string name="disconnectionLabel">Disconnect</string>
 </resources>

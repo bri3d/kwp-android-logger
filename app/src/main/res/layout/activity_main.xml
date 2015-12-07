@@ -9,14 +9,6 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.brianledbetter.kwplogger.MainActivity">
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start Connection"
-        android:id="@+id/startButton"
-        android:layout_centerHorizontal="true"
-        android:onClick="onStartButtonPressed" />
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -61,5 +53,15 @@
         android:layout_above="@+id/partNumber"
         android:layout_centerHorizontal="true"
         android:textStyle="bold" />
+
+    <ToggleButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/connectionLabel"
+        android:id="@+id/connectionToggle"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:textOff="@string/connectionLabel"
+        android:textOn="@string/disconnectionLabel" />
 
 </RelativeLayout>

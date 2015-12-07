@@ -9,20 +9,32 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends ActionBarActivity {
+    ScheduledExecutorService m_pollTemperature = null;
     DiagnosticReceiver m_receiver = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
+        toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    stopConnection();
+                } else {
+                    startConnection();
+                }
+            }
+        });
     }
 
     @Override
@@ -58,7 +70,7 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void onStartButtonPressed(View v) {
+    public void startConnection() {
         BluetoothAdapter b = BluetoothAdapter.getDefaultAdapter();
 
         if (!b.isEnabled()) {
@@ -69,6 +81,13 @@ public class MainActivity extends ActionBarActivity {
         Intent startIntent = new Intent(this, DiagnosticsService.class);
         startIntent.setAction(DiagnosticsService.START_DIAGNOSTICS_SERVICE);
         startService(startIntent);
+    }
+
+    public void stopConnection() {
+        m_pollTemperature.shutdown();
+        Intent stopIntent = new Intent(this, DiagnosticsService.class);
+        stopIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
+        stopService(stopIntent);
     }
 
     private void registerReceivers() {
@@ -82,10 +101,10 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void schedulePolling() {
-        ScheduledExecutorService pollTemperature =
+        m_pollTemperature =
                 Executors.newSingleThreadScheduledExecutor();
 
-        pollTemperature.scheduleAtFixedRate
+        m_pollTemperature.scheduleAtFixedRate
                 (new Runnable() {
                     public void run() {
                         Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);

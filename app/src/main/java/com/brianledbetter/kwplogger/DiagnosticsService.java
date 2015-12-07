@@ -67,6 +67,7 @@ public class DiagnosticsService extends PermanentService {
             m_kwp.stopSession();
             m_btSocket.close();
             m_isConnected = false;
+            stopSelf();
         } catch (KWPException e) {
             Log.d("KWP", "Failed to close connection!");
         } catch (IOException e) { // Got to love early 2000s Java, thanks Android
