@@ -12,6 +12,43 @@ public class MeasurementValue {
     public String stringLabel;
     public static final Map<Byte, MeasurementValueParser> valueParsers = new HashMap<Byte, MeasurementValueParser>() {
         { // I WANT LAMBDAS
+            put((byte)0x01, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(byte[] bytes) {
+                    int rpm = (bytes[0] * bytes[1]) / 5;
+                    return new MeasurementValue(Integer.toString(rpm), "rpm");
+                }
+            });
+            put((byte) 0x04, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(byte[] bytes) {
+                    String unit;
+                    if (bytes[1] > 127) {
+
+                        unit = "deg ATDC";
+                    }
+                    else {
+                        unit = "deg BTDC";
+                    }
+                    int output = (Math.abs(bytes[1] - 127) * bytes[0])/100;
+                    return new MeasurementValue(Integer.toString(output), unit);
+                }
+            });
+            put((byte) 0x06, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(byte[] bytes) {
+                    int output = (bytes[0]*bytes[1])/1000;
+                    return new MeasurementValue(Integer.toString(output), "V");
+                }
+            });
+            put((byte) 0x07, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(byte[] bytes) {
+                    int output = (bytes[0]*bytes[1])/100;
+                    return new MeasurementValue(Integer.toString(output), "km/h");
+                }
+            });
+
             put((byte)0x1A, new MeasurementValueParser() {
                 @Override
                 public MeasurementValue parseBytes(byte[] bytes) {
@@ -19,6 +56,7 @@ public class MeasurementValue {
                     return new MeasurementValue(Integer.toString(temperatureDegreesC), "degC");
                 }
             });
+
         }
     };
 

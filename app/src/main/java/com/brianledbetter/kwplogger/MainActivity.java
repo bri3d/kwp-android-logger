@@ -18,7 +18,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends ActionBarActivity {
-    ScheduledExecutorService m_pollTemperature = null;
+    ScheduledExecutorService m_pollTemperature = Executors.newSingleThreadScheduledExecutor();
     DiagnosticReceiver m_receiver = null;
 
     @Override
@@ -101,9 +101,6 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void schedulePolling() {
-        m_pollTemperature =
-                Executors.newSingleThreadScheduledExecutor();
-
         m_pollTemperature.scheduleAtFixedRate
                 (new Runnable() {
                     public void run() {
