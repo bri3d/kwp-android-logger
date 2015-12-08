@@ -1,5 +1,7 @@
 # KWP Logger for Android
 
+![Screenshot](https://cloud.githubusercontent.com/assets/210793/11647621/4e214c52-9d27-11e5-8965-d76ae00cba89.png)
+
 This project is intended to provide a KWP2000 data logger for Android.
 
 You can access a very primitive dialog similar to the Measurements dialog in VCDS by visiting the ... menu.
