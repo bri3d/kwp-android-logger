@@ -24,8 +24,9 @@ import java.util.concurrent.TimeUnit;
  * Created by b3d on 12/7/15.
  */
 public class DetailedMeasurementActivity extends Activity {
-    ScheduledExecutorService m_pollMeasurement = Executors.newSingleThreadScheduledExecutor();
-    DiagnosticReceiver m_receiver = null;
+    private ScheduledExecutorService m_pollMeasurement = Executors.newSingleThreadScheduledExecutor();
+    private DiagnosticReceiver m_receiver = null;
+    private int m_selectedMeasurementGroup = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +43,12 @@ public class DetailedMeasurementActivity extends Activity {
             }
         });
         NumberPicker numberPicker = (NumberPicker) findViewById(R.id.numberPicker);
+        numberPicker.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker numberPicker, int i, int i1) {
+                m_selectedMeasurementGroup = numberPicker.getValue();
+            }
+        });
         numberPicker.setMinValue(1);
         numberPicker.setMaxValue(255);
         numberPicker.setValue(1);
@@ -104,8 +111,7 @@ public class DetailedMeasurementActivity extends Activity {
                     public void run() {
                         Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);
                         startIntent.setAction(DiagnosticsService.POLL_DIAGNOSTICS_SERVICE);
-                        NumberPicker numberPicker = (NumberPicker) findViewById(R.id.numberPicker);
-                        startIntent.putExtra(DiagnosticsService.MEASUREMENT_GROUP, numberPicker.getValue());
+                        startIntent.putExtra(DiagnosticsService.MEASUREMENT_GROUP, m_selectedMeasurementGroup);
                         startService(startIntent);
                     }
                 }, 0, 250, TimeUnit.MILLISECONDS);
