@@ -19,6 +19,45 @@ public class DiagnosticSession {
         return startSession((byte)0x89); // 0x89 : VW Diagnostic Session
     }
 
+    public int getSeedEcuID() throws KWPException {
+        byte[] byteBuffer = new byte[]{(byte) 0x1A, (byte) 0x92}; // SystemSupplierSpecific ECUID request to get vendor partno
+        m_IO.writeBytes(byteBuffer);
+        byte[] resultingBytes = m_IO.readBytes();
+        if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
+        {
+            byte[] ecuID = Arrays.copyOfRange(resultingBytes, 2, 7);
+            return (ecuID[0] + ecuID[1] + ecuID[2] + ecuID[3] + ecuID[4]) & 0x3F;
+        } else {
+            throw new KWPException("Failed to read vendor part number : " + HexUtil.bytesToHexString(resultingBytes));
+        }
+    }
+
+    public int getSecurityAccessSeed() throws KWPException {
+        byte[] byteBuffer = new byte[]{(byte) 0x27, (byte) 0x01}; // 0x27 0x01 : SecurityAccess Get Seed
+        m_IO.writeBytes(byteBuffer);
+        byte[] resultingBytes = m_IO.readBytes();
+        if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
+        {
+            byte[] seedBytes = Arrays.copyOfRange(resultingBytes, 2, 6);
+            return (seedBytes[0]<<24)+(seedBytes[1]<<16)+(seedBytes[2]<<8)+(seedBytes[3]);
+        } else {
+            throw new KWPException("Failed to read seed : " + HexUtil.bytesToHexString(resultingBytes));
+        }
+    }
+
+    public boolean loginWithKey(int key) throws KWPException {
+        // 0x27 0x02 : SecurityAccess Log In
+        byte[] byteBuffer = new byte[] {(byte) 0x27, (byte) 0x02, (byte)((key >> 24 ) & 0xff), (byte)((key >> 16 ) & 0xff), (byte)((key >> 8 ) & 0xff), (byte)(key & 0xff)};
+        m_IO.writeBytes(byteBuffer);
+        byte[] resultingBytes = m_IO.readBytes();
+        if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
+        {
+           return true;
+        } else {
+            throw new KWPException("Failed to log in : " + HexUtil.bytesToHexString(resultingBytes));
+        }
+    }
+
     public boolean stopSession() throws KWPException {
         byte[] byteBuffer = new byte[] {(byte)0x82}; // 0x82 : Log off
         m_IO.writeBytes(byteBuffer);
@@ -43,6 +82,13 @@ public class DiagnosticSession {
         } else {
             return false;
         }
+    }
+
+    public boolean securityLogin() throws KWPException {
+        int ecuID = getSeedEcuID();
+        int seed = getSecurityAccessSeed();
+        int key = VAGSeedKeyLogin.calculateKey(ecuID, seed);
+        return loginWithKey(key);
     }
 
     public List<MeasurementValue> readIdentifier(int identifierIndex) throws KWPException {

@@ -147,7 +147,7 @@ public class MeasurementValue {
             put((byte)0x12, new MeasurementValueParser() {
                 @Override
                 public MeasurementValue parseBytes(int[] bytes) {
-                    double out = .04 * bytes[0] * bytes[1];
+                    double out = (bytes[0] * bytes[1]) / 25.0;
                     return new MeasurementValue(Double.toString(out), "mbar");
                 }
             });
@@ -161,7 +161,7 @@ public class MeasurementValue {
             put((byte)0x14, new MeasurementValueParser() {
                 @Override
                 public MeasurementValue parseBytes(int[] bytes) {
-                    double out = bytes[0] * (bytes[1] - 128) / 128.0;
+                    double out = bytes[0] * (bytes[1] - 128) / 128.0; // do we really subtract from byte1 here?
                     return new MeasurementValue(Double.toString(out), "%");
                 }
             });
@@ -268,7 +268,7 @@ public class MeasurementValue {
                 @Override
                 public MeasurementValue parseBytes(int[] bytes) {
                     double out = (bytes[1] - 128) * bytes[0] / 100;
-                    return new MeasurementValue(Double.toString(out), "deg kW");
+                    return new MeasurementValue(Double.toString(out), "kW");
                 }
             });
             put((byte)0x23, new MeasurementValueParser() {

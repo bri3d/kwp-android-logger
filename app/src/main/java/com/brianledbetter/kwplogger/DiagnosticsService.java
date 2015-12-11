@@ -26,6 +26,7 @@ import java.util.UUID;
  */
 public class DiagnosticsService extends PermanentService {
     public static final String START_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.StartService";
+    public static final String LOGIN_SERVICE = "com.brianledbetter.kwplogger.LoginService";
     public static final String POLL_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.PollService";
     public static final String END_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.EndService";
 
@@ -65,6 +66,10 @@ public class DiagnosticsService extends PermanentService {
         if (intent.getAction().equals(END_DIAGNOSTICS_SERVICE)) {
             Log.d("KWP", "Ending connection...");
             endConnection();
+        }
+        if (intent.getAction().equals(LOGIN_SERVICE)) {
+            Log.d("KWP", "Attempting login... ");
+            securityLogin();
         }
     }
 
@@ -176,6 +181,18 @@ public class DiagnosticsService extends PermanentService {
         catch (KWPException e)
         {
             Log.d("KWP", "Failed to poll due to " + e.toString());
+        }
+    }
+
+    private void securityLogin() {
+        if(!m_isConnected) {
+            return;
+        }
+        try {
+            m_kwp.securityLogin();
+        } catch (KWPException e)
+        {
+            Log.d("KWP", "Failed to login due to " + e.toString());
         }
     }
 }
