@@ -26,7 +26,12 @@ public class DiagnosticSession {
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
             byte[] ecuID = Arrays.copyOfRange(resultingBytes, 2, 7);
-            return (ecuID[0] + ecuID[1] + ecuID[2] + ecuID[3] + ecuID[4]) & 0x3F;
+            int res = 0;
+            for (int i = 0; i < 5; i++) {
+                res += ecuID[i] & 0xFF;
+            }
+            res = res & 0x3F;
+            return res;
         } else {
             throw new KWPException("Failed to read vendor part number : " + HexUtil.bytesToHexString(resultingBytes));
         }
@@ -39,7 +44,7 @@ public class DiagnosticSession {
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
             byte[] seedBytes = Arrays.copyOfRange(resultingBytes, 2, 6);
-            return (seedBytes[0]<<24)+(seedBytes[1]<<16)+(seedBytes[2]<<8)+(seedBytes[3]);
+            return HexUtil.bytesToInt(seedBytes);
         } else {
             throw new KWPException("Failed to read seed : " + HexUtil.bytesToHexString(resultingBytes));
         }
@@ -125,6 +130,18 @@ public class DiagnosticSession {
 
     }
 
+    public byte[] readMemoryByAddress(int address, int bytes) throws KWPException
+    {
+        byte[] byteBuffer = new byte[] {(byte)0x23, (byte)((address >> 16 ) & 0xff), (byte)((address >> 8 ) & 0xff), (byte)((address) & 0xff), (byte)bytes}; // 0x23 : ReadMemoryAtAddress
+        m_IO.writeBytes(byteBuffer);
+        byte[] resultingBytes = m_IO.readBytes();
+        if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
+        {
+           return Arrays.copyOfRange(resultingBytes, 2, 2+bytes);
+        } else {
+            throw new KWPException("Failed to read memory : " + HexUtil.bytesToHexString(resultingBytes));
+        }
+    }
     public boolean writeDynamicallyDefinedIdentifier(int numberOfRecords, int ddliNumber, byte[] byteLengths, int[] byteAddresses) throws KWPException {
         if(!m_connected || numberOfRecords > 20 || ddliNumber > 15 || byteAddresses.length > numberOfRecords)
             return false;

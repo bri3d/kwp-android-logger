@@ -13,4 +13,12 @@ public class HexUtil {
         sb.append("\r");
         return sb.toString();
     }
+    public static int bytesToInt(byte[] bytes) {
+        int ret = 0;
+        for (int i=0; i<4 && i<bytes.length; i++) {
+            ret <<= 8;
+            ret |= (int)bytes[i] & 0xFF;
+        }
+        return ret;
+    }
 }
