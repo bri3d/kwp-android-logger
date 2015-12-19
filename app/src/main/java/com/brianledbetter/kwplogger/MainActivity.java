@@ -15,14 +15,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 public class MainActivity extends ActionBarActivity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
-    ScheduledExecutorService m_pollTemperature = Executors.newSingleThreadScheduledExecutor();
     DiagnosticReceiver m_receiver = null;
+    boolean m_isConnected = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +27,9 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    startConnection();
+                    if (!m_isConnected) {
+                        startConnection();
+                    }
                 } else {
                     stopConnection();
                 }
@@ -100,19 +97,25 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
         }
 
         Object[] devices = b.getBondedDevices().toArray();
-
-        BluetoothPickerDialogFragment bpdf = new BluetoothPickerDialogFragment();
-        bpdf.mPossibleDevices = devices;
-        bpdf.show(getFragmentManager(), "BluetoothPickerDialogFragment");
+        if (devices.length > 0) {
+            BluetoothPickerDialogFragment bpdf = new BluetoothPickerDialogFragment();
+            bpdf.mPossibleDevices = devices;
+            bpdf.show(getFragmentManager(), "BluetoothPickerDialogFragment");
+        } else {
+            Toast.makeText(getApplicationContext(), "ERROR! " + "No Bluetooth Device available!", Toast.LENGTH_LONG).show();
+        }
     }
 
     public void stopConnection() {
         ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
         toggle.setChecked(false);
-        m_pollTemperature.shutdown();
-        Intent stopIntent = new Intent(this, DiagnosticsService.class);
-        stopIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
+        m_isConnected = false;
+        Intent stopIntent = new Intent(this, PollingService.class);
+        stopIntent.setAction(PollingService.STOP_POLL_DIAGNOSTICS_SERVICE);
         stopService(stopIntent);
+        Intent stopBluetoothIntent = new Intent(this, DiagnosticsService.class);
+        stopBluetoothIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
+        stopService(stopBluetoothIntent);
     }
 
     private void registerReceivers() {
@@ -129,17 +132,11 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
     }
 
     private void schedulePolling() {
-        m_pollTemperature.shutdown();
-        m_pollTemperature = Executors.newSingleThreadScheduledExecutor();
-        m_pollTemperature.scheduleAtFixedRate
-                (new Runnable() {
-                    public void run() {
-                        Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);
-                        startIntent.setAction(DiagnosticsService.POLL_DIAGNOSTICS_SERVICE);
-                        startIntent.putExtra(DiagnosticsService.MEASUREMENT_GROUP, 0x6);
-                        startService(startIntent);
-                    }
-                }, 0, 250, TimeUnit.MILLISECONDS);
+        if (!m_isConnected) return;
+        Intent startIntent = new Intent(getApplicationContext(), PollingService.class);
+        startIntent.setAction(PollingService.START_POLL_DIAGNOSTICS_SERVICE);
+        startIntent.putExtra(PollingService.MEASUREMENT_GROUP, 0x6);
+        startService(startIntent);
     }
 
     public class DiagnosticReceiver extends BroadcastReceiver {
@@ -152,8 +149,9 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
             if (intent.getAction().equals(ECU_RESP)) {
                 TextView ecuIDView = (TextView)findViewById(R.id.partNumber);
                 ecuIDView.setText(intent.getStringExtra(DiagnosticsService.ECU_ID_STRING));
+                m_isConnected = true;
                 schedulePolling();
-            } else if(intent.getAction().equals(ECU_RESP)) {
+            } else if(intent.getAction().equals(MEASUREMENT_RESP)) {
                 TextView valueView = (TextView)findViewById(R.id.valueValue);
                 ParcelableMeasurementValues values = intent.getParcelableExtra(DiagnosticsService.VALUE_STRING);
                 valueView.setText(values.measurementValues.get(0).stringValue);

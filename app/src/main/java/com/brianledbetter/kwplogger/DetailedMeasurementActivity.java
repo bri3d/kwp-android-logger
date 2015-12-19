@@ -26,9 +26,9 @@ import java.util.concurrent.TimeUnit;
  * Created by b3d on 12/7/15.
  */
 public class DetailedMeasurementActivity extends Activity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
-    private ScheduledExecutorService m_pollMeasurement = Executors.newSingleThreadScheduledExecutor();
     private DiagnosticReceiver m_receiver = null;
     private int m_selectedMeasurementGroup = 1;
+    private boolean m_isConnected;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +38,9 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    startConnection();
+                    if (!m_isConnected) {
+                        startConnection();
+                    }
                 } else {
                     stopConnection();
                 }
@@ -49,6 +51,7 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
             @Override
             public void onValueChange(NumberPicker numberPicker, int i, int i1) {
                 m_selectedMeasurementGroup = numberPicker.getValue();
+                schedulePolling();
             }
         });
         numberPicker.setMinValue(1);
@@ -107,10 +110,13 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
     }
 
     public void stopConnection() {
-        m_pollMeasurement.shutdown();
-        Intent stopIntent = new Intent(this, DiagnosticsService.class);
-        stopIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
+        m_isConnected = false;
+        Intent stopIntent = new Intent(this, PollingService.class);
+        stopIntent.setAction(PollingService.STOP_POLL_DIAGNOSTICS_SERVICE);
         stopService(stopIntent);
+        Intent stopBluetoothIntent = new Intent(this, DiagnosticsService.class);
+        stopBluetoothIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
+        stopService(stopBluetoothIntent);
     }
 
     private void registerReceivers() {
@@ -127,26 +133,11 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
     }
 
     private void schedulePolling() {
-        m_pollMeasurement.shutdown();
-        m_pollMeasurement = Executors.newSingleThreadScheduledExecutor();
-        m_pollMeasurement.scheduleAtFixedRate
-                (new Runnable() {
-                    public void run() {
-
-                        Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);
-                        startIntent.setAction(DiagnosticsService.POLL_DIAGNOSTICS_SERVICE);
-                        startIntent.putExtra(DiagnosticsService.MEASUREMENT_GROUP, m_selectedMeasurementGroup);
-                        startService(startIntent);
-                        /*
-                        Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);
-                        startIntent.setAction(DiagnosticsService.READ_MEMORY_SERVICE);
-                        startIntent.putExtra(DiagnosticsService.MEMORY_ADDRESS, 0x00F88A);
-                        startIntent.putExtra(DiagnosticsService.MEMORY_SIZE, 0x2);
-                        startService(startIntent);
-                        */
-                    }
-                }, 0, 250, TimeUnit.MILLISECONDS);
-
+        if (!m_isConnected) return;
+        Intent startIntent = new Intent(getApplicationContext(), PollingService.class);
+        startIntent.setAction(PollingService.START_POLL_DIAGNOSTICS_SERVICE);
+        startIntent.putExtra(PollingService.MEASUREMENT_GROUP, m_selectedMeasurementGroup);
+        startService(startIntent);
     }
 
     public class DiagnosticReceiver extends BroadcastReceiver {
@@ -159,6 +150,7 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
             if (intent.getAction().equals(ECU_RESP)) {
                 TextView ecuIDView = (TextView)findViewById(R.id.partNumber);
                 ecuIDView.setText(intent.getStringExtra(DiagnosticsService.ECU_ID_STRING));
+                m_isConnected = true;
                 schedulePolling();
             } else if(intent.getAction().equals(MEASUREMENT_RESP)) {
                 ParcelableMeasurementValues values = intent.getParcelableExtra(DiagnosticsService.VALUE_STRING);
