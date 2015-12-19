@@ -1,6 +1,7 @@
 package com.brianledbetter.kwplogger;
 
 import android.app.Activity;
+import android.app.DialogFragment;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,6 +13,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.NumberPicker;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.brianledbetter.kwplogger.KWP2000.MeasurementValue;
@@ -23,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by b3d on 12/7/15.
  */
-public class DetailedMeasurementActivity extends Activity {
+public class DetailedMeasurementActivity extends Activity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
     private ScheduledExecutorService m_pollMeasurement = Executors.newSingleThreadScheduledExecutor();
     private DiagnosticReceiver m_receiver = null;
     private int m_selectedMeasurementGroup = 1;
@@ -71,6 +73,24 @@ public class DetailedMeasurementActivity extends Activity {
         return false;
     }
 
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialog, String selectedDevice) {
+        Intent startIntent = new Intent(this, DiagnosticsService.class);
+        startIntent.setAction(DiagnosticsService.START_DIAGNOSTICS_SERVICE);
+        String initAddress = ((EditText)findViewById(R.id.initAddress)).getText().toString();
+        String remoteAddress = ((EditText)findViewById(R.id.controllerAddress)).getText().toString();
+        startIntent.putExtra(DiagnosticsService.INIT_ADDRESS, Integer.parseInt(initAddress));
+        startIntent.putExtra(DiagnosticsService.REMOTE_ADDRESS, Integer.parseInt(remoteAddress));
+        startIntent.putExtra(DiagnosticsService.BLUETOOTH_DEVICE, selectedDevice);
+        startService(startIntent);
+    }
+
+    @Override
+    public void onDialogNegativeClick(DialogFragment dialog) {
+        ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
+        toggle.setChecked(false);
+    }
+
     public void startConnection() {
         BluetoothAdapter b = BluetoothAdapter.getDefaultAdapter();
 
@@ -79,13 +99,11 @@ public class DetailedMeasurementActivity extends Activity {
             startActivityForResult(turnOn, 0);
         }
 
-        Intent startIntent = new Intent(this, DiagnosticsService.class);
-        startIntent.setAction(DiagnosticsService.START_DIAGNOSTICS_SERVICE);
-        String initAddress = ((EditText)findViewById(R.id.initAddress)).getText().toString();
-        String remoteAddress = ((EditText)findViewById(R.id.controllerAddress)).getText().toString();
-        startIntent.putExtra(DiagnosticsService.INIT_ADDRESS, Integer.parseInt(initAddress));
-        startIntent.putExtra(DiagnosticsService.REMOTE_ADDRESS, Integer.parseInt(remoteAddress));
-        startService(startIntent);
+        Object[] devices = b.getBondedDevices().toArray();
+
+        BluetoothPickerDialogFragment bpdf = new BluetoothPickerDialogFragment();
+        bpdf.mPossibleDevices = devices;
+        bpdf.show(getFragmentManager(), "BluetoothPickerDialogFragment");
     }
 
     public void stopConnection() {
@@ -100,34 +118,47 @@ public class DetailedMeasurementActivity extends Activity {
         ecuFilter.addCategory(Intent.CATEGORY_DEFAULT);
         IntentFilter dataFilter = new IntentFilter(DiagnosticReceiver.MEASUREMENT_RESP);
         dataFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        IntentFilter failureFilter = new IntentFilter(DiagnosticReceiver.FAILURE_RESP);
+        failureFilter.addCategory(Intent.CATEGORY_DEFAULT);
         m_receiver = new DiagnosticReceiver();
         registerReceiver(m_receiver, ecuFilter);
         registerReceiver(m_receiver, dataFilter);
+        registerReceiver(m_receiver, failureFilter);
     }
 
     private void schedulePolling() {
         m_pollMeasurement.scheduleAtFixedRate
                 (new Runnable() {
                     public void run() {
+
                         Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);
                         startIntent.setAction(DiagnosticsService.POLL_DIAGNOSTICS_SERVICE);
                         startIntent.putExtra(DiagnosticsService.MEASUREMENT_GROUP, m_selectedMeasurementGroup);
                         startService(startIntent);
+                        /*
+                        Intent startIntent = new Intent(getApplicationContext(), DiagnosticsService.class);
+                        startIntent.setAction(DiagnosticsService.READ_MEMORY_SERVICE);
+                        startIntent.putExtra(DiagnosticsService.MEMORY_ADDRESS, 0x00F88A);
+                        startIntent.putExtra(DiagnosticsService.MEMORY_SIZE, 0x2);
+                        startService(startIntent);
+                        */
                     }
                 }, 0, 250, TimeUnit.MILLISECONDS);
+
     }
 
     public class DiagnosticReceiver extends BroadcastReceiver {
         public static final String ECU_RESP = "com.brianledbetter.kwplogger.ECU_ID";
         public static final String MEASUREMENT_RESP = "com.brianledbetter.kwplogger.MEASUREMENT";
+        public static final String FAILURE_RESP = "com.brianledbetter.kwplogger.FAILURE";
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction() == ECU_RESP) {
+            if (intent.getAction().equals(ECU_RESP)) {
                 TextView ecuIDView = (TextView)findViewById(R.id.partNumber);
                 ecuIDView.setText(intent.getStringExtra(DiagnosticsService.ECU_ID_STRING));
                 schedulePolling();
-            } else if(intent.getAction() == MEASUREMENT_RESP) {
+            } else if(intent.getAction().equals(MEASUREMENT_RESP)) {
                 ParcelableMeasurementValues values = intent.getParcelableExtra(DiagnosticsService.VALUE_STRING);
                 for (int i = 0; i < values.measurementValues.size(); i++) {
                     TextView valueLabel = (TextView)findViewById(getResources().getIdentifier("value" + (i + 1), "id", getPackageName()));
@@ -138,6 +169,9 @@ public class DetailedMeasurementActivity extends Activity {
                     if (labelLabel != null)
                         labelLabel.setText(value.stringLabel);
                 }
+            } else if(intent.getAction().equals(FAILURE_RESP)) {
+                Toast.makeText(getApplicationContext(), "ERROR! " + intent.getStringExtra(DiagnosticsService.ERROR_STRING), Toast.LENGTH_LONG).show();
+                stopConnection();
             }
         }
     }

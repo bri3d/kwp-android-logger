@@ -5,11 +5,11 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.brianledbetter.kwplogger.KWP2000.DiagnosticSession;
 import com.brianledbetter.kwplogger.KWP2000.ECUIdentification;
 import com.brianledbetter.kwplogger.KWP2000.ELMIO;
+import com.brianledbetter.kwplogger.KWP2000.HexUtil;
 import com.brianledbetter.kwplogger.KWP2000.KWP2000IO;
 import com.brianledbetter.kwplogger.KWP2000.KWPException;
 import com.brianledbetter.kwplogger.KWP2000.MeasurementValue;
@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -26,7 +25,7 @@ import java.util.UUID;
  */
 public class DiagnosticsService extends PermanentService {
     public static final String START_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.StartService";
-    public static final String LOGIN_SERVICE = "com.brianledbetter.kwplogger.LoginService";
+    public static final String READ_MEMORY_SERVICE = "com.brianledbetter.kwplogger.ReadMemoryService";
     public static final String POLL_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.PollService";
     public static final String END_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.EndService";
 
@@ -34,8 +33,12 @@ public class DiagnosticsService extends PermanentService {
     public static final String VALUE_STRING = "value";
 
     public static final String MEASUREMENT_GROUP = "measurementGroup";
+    public static final String MEMORY_ADDRESS = "memoryAddress";
+    public static final String MEMORY_SIZE = "memorySize";
     public static final String INIT_ADDRESS = "initAddress";
     public static final String REMOTE_ADDRESS = "remoteAddress";
+    public static final String BLUETOOTH_DEVICE = "bluetoothDevice";
+    public static final String ERROR_STRING = "error";
 
     // this is the "well known" UUID for Bluetooth SPP (Serial Profile).
     private static final UUID SPP_UUID =
@@ -55,8 +58,9 @@ public class DiagnosticsService extends PermanentService {
         if (intent.getAction().equals(START_DIAGNOSTICS_SERVICE)) {
             int initAddress = intent.getIntExtra(INIT_ADDRESS, 0x1);
             int remoteAddress = intent.getIntExtra(REMOTE_ADDRESS, 0x10);
+            String bluetoothDevice = intent.getStringExtra(BLUETOOTH_DEVICE);
             Log.d("KWP", "Starting connection!");
-            startConnection(initAddress, remoteAddress);
+            startConnection(initAddress, remoteAddress, bluetoothDevice);
         }
         if (intent.getAction().equals(POLL_DIAGNOSTICS_SERVICE)) {
             int measurementGroup = intent.getIntExtra(MEASUREMENT_GROUP, 0x1);
@@ -67,9 +71,11 @@ public class DiagnosticsService extends PermanentService {
             Log.d("KWP", "Ending connection...");
             endConnection();
         }
-        if (intent.getAction().equals(LOGIN_SERVICE)) {
-            Log.d("KWP", "Attempting login... ");
-            securityLogin();
+        if (intent.getAction().equals(READ_MEMORY_SERVICE)) {
+            Log.d("KWP", "Reading Memory");
+            int address = intent.getIntExtra(MEMORY_ADDRESS, 0x1);
+            int size = intent.getIntExtra(MEMORY_SIZE, 0x1);
+            readMemory(address, size);
         }
     }
 
@@ -88,9 +94,9 @@ public class DiagnosticsService extends PermanentService {
         }
     }
 
-    private void startConnection(int initAddress, int remoteAddress) {
+    private void startConnection(int initAddress, int remoteAddress, String bluetoothDevice) {
         try {
-            if(!connectBluetooth(initAddress, remoteAddress)) return;
+            if(!connectBluetooth(initAddress, remoteAddress, bluetoothDevice)) return;
             connectKWP2000();
             ECUIdentification ecuID = m_kwp.readECUIdentification();
             Log.d("KWP", "Got string " + ecuID.hardwareNumber + " for hardware number");
@@ -102,25 +108,19 @@ public class DiagnosticsService extends PermanentService {
             sendBroadcast(broadcastIntent);
         } catch (KWPException e) {
             endConnection();
-            Toast.makeText(getApplicationContext(), "ERROR. Is the key on? " + e.toString(), Toast.LENGTH_LONG).show();
+            broadcastError("Issue opening ECU. Is the key on? " + e.toString());
         }
     }
 
-    private boolean connectBluetooth(int initAddress, int remoteAddress) {
+    private boolean connectBluetooth(int initAddress, int remoteAddress, String bluetoothDeviceAddress) {
         BluetoothAdapter b = BluetoothAdapter.getDefaultAdapter();
-        Set<BluetoothDevice> pairedDevices = b.getBondedDevices();
-        if(pairedDevices.size() == 0)
-        {
-            Log.d("KWP", "No Candidate Device");
-            return false;
-        }
-        BluetoothDevice firstBluetoothDevice = (BluetoothDevice)pairedDevices.toArray()[0];
+        BluetoothDevice bluetoothDevice = b.getRemoteDevice(bluetoothDeviceAddress);
         try {
-            m_btSocket = firstBluetoothDevice.createRfcommSocketToServiceRecord(SPP_UUID);
+            m_btSocket = bluetoothDevice.createRfcommSocketToServiceRecord(SPP_UUID);
             Log.d("KWP", "Created RFComm Service");
         } catch (IOException e) {
             Log.d("KWP", "RFComm Creation Failed");
-            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+            broadcastError("Issue opening connection. Is the ELM327 device on? " + e.toString());
             return false;
         }
         b.cancelDiscovery();
@@ -132,12 +132,12 @@ public class DiagnosticsService extends PermanentService {
             m_ELMKWP = new ELMIO(inStream, outStream);
         } catch (IOException e) {
             Log.d("KWP", "RFComm Connection Failed");
-            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+            broadcastError("Issue opening connection. Is the ELM327 device on? " + e.toString());
             try {
                 m_btSocket.close();
                 return false;
             } catch (IOException e2) { // J A V A
-                Toast.makeText(getApplicationContext(), e2.getMessage(), Toast.LENGTH_LONG).show();
+                broadcastError("Issue closing connection. Is the ELM327 device on? " + e.toString());
             }
         }
         try {
@@ -194,5 +194,25 @@ public class DiagnosticsService extends PermanentService {
         {
             Log.d("KWP", "Failed to login due to " + e.toString());
         }
+    }
+
+    private void readMemory(int address, int length) {
+        if (!m_isConnected) {
+            return;
+        }
+        try {
+            Log.d("KWP", "Read memory : " + HexUtil.bytesToHexString(m_kwp.readMemoryByAddress(address, length)));
+        } catch (KWPException e)
+        {
+            Log.d("KWP", "Failed to read memory due to " + e.toString());
+        }
+    }
+
+    private void broadcastError(String errorMessage) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(MainActivity.DiagnosticReceiver.FAILURE_RESP);
+        broadcastIntent.putExtra(ERROR_STRING, errorMessage);
+        broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        sendBroadcast(broadcastIntent);
     }
 }

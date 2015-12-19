@@ -24,7 +24,7 @@ public class LoginIntegrationTest extends TestCase {
         writeBytes.add(new byte[] {(byte)0x27,(byte)0x02,(byte)0xB1,(byte)0x85,(byte)0xF9,(byte)0x6E});
         readBytes.add(new byte[] {(byte)0x5A,(byte)0x92,(byte)0x30,(byte)0x32,(byte)0x36,(byte)0x31,(byte)0x53});
         readBytes.add(new byte[] {(byte)0x67,(byte)0x01,(byte)0x01,(byte)0xAA,(byte)0x20,(byte)0xC4});
-        readBytes.add(new byte[] {(byte)0x62,(byte)0x02});
+        readBytes.add(new byte[] {(byte)0x67,(byte)0x02});
         m_testIO = new KWP2000TestIO(readBytes, writeBytes);
     }
 

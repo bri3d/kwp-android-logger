@@ -1,6 +1,7 @@
 <resources>
-    <string name="app_name">KWPLogger</string>
-    <string name="main_activity_name">Vehicle Data</string>
+    <string name="app_name">Hot Pepper</string>
+    <string name="main_activity_name">Transmission Temperature</string>
+    <string name="measurement_activity_name">Advanced Measurements</string>
     <string name="not_connected_label">Not Connected</string>
     <string name="transmission_temperature_label">Transmission Temperature</string>
     <string name="part_number_label">Part Number</string>
@@ -11,4 +12,7 @@
     <string name="init_address_label">KWP Init Address</string>
     <string name="controller_address_label">KWP Controller Address</string>
     <string name="action_measurements">Measurements</string>
+    <string name="pick_bluetooth">Select ELM327</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.brianledbetter.kwplogger;
 
+import android.app.DialogFragment;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,13 +12,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.CompoundButton;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
     ScheduledExecutorService m_pollTemperature = Executors.newSingleThreadScheduledExecutor();
     DiagnosticReceiver m_receiver = null;
 
@@ -72,6 +74,22 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialog, String selectedDevice) {
+        Intent startIntent = new Intent(this, DiagnosticsService.class);
+        startIntent.setAction(DiagnosticsService.START_DIAGNOSTICS_SERVICE);
+        startIntent.putExtra(DiagnosticsService.INIT_ADDRESS, 0x2);
+        startIntent.putExtra(DiagnosticsService.REMOTE_ADDRESS, 0x1A);
+        startIntent.putExtra(DiagnosticsService.BLUETOOTH_DEVICE, selectedDevice);
+        startService(startIntent);
+    }
+
+    @Override
+    public void onDialogNegativeClick(DialogFragment dialog) {
+        ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
+        toggle.setChecked(false);
+    }
+
     public void startConnection() {
         BluetoothAdapter b = BluetoothAdapter.getDefaultAdapter();
 
@@ -80,14 +98,16 @@ public class MainActivity extends ActionBarActivity {
             startActivityForResult(turnOn, 0);
         }
 
-        Intent startIntent = new Intent(this, DiagnosticsService.class);
-        startIntent.setAction(DiagnosticsService.START_DIAGNOSTICS_SERVICE);
-        startIntent.putExtra(DiagnosticsService.INIT_ADDRESS, 0x2);
-        startIntent.putExtra(DiagnosticsService.REMOTE_ADDRESS, 0x1A);
-        startService(startIntent);
+        Object[] devices = b.getBondedDevices().toArray();
+
+        BluetoothPickerDialogFragment bpdf = new BluetoothPickerDialogFragment();
+        bpdf.mPossibleDevices = devices;
+        bpdf.show(getFragmentManager(), "BluetoothPickerDialogFragment");
     }
 
     public void stopConnection() {
+        ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
+        toggle.setChecked(false);
         m_pollTemperature.shutdown();
         Intent stopIntent = new Intent(this, DiagnosticsService.class);
         stopIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
@@ -99,9 +119,12 @@ public class MainActivity extends ActionBarActivity {
         ecuFilter.addCategory(Intent.CATEGORY_DEFAULT);
         IntentFilter dataFilter = new IntentFilter(DiagnosticReceiver.MEASUREMENT_RESP);
         dataFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        IntentFilter failureFilter = new IntentFilter(DiagnosticReceiver.FAILURE_RESP);
+        failureFilter.addCategory(Intent.CATEGORY_DEFAULT);
         m_receiver = new DiagnosticReceiver();
         registerReceiver(m_receiver, ecuFilter);
         registerReceiver(m_receiver, dataFilter);
+        registerReceiver(m_receiver, failureFilter);
     }
 
     private void schedulePolling() {
@@ -119,19 +142,23 @@ public class MainActivity extends ActionBarActivity {
     public class DiagnosticReceiver extends BroadcastReceiver {
         public static final String ECU_RESP = "com.brianledbetter.kwplogger.ECU_ID";
         public static final String MEASUREMENT_RESP = "com.brianledbetter.kwplogger.MEASUREMENT";
+        public static final String FAILURE_RESP = "com.brianledbetter.kwplogger.FAILURE";
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction() == ECU_RESP) {
+            if (intent.getAction().equals(ECU_RESP)) {
                 TextView ecuIDView = (TextView)findViewById(R.id.partNumber);
                 ecuIDView.setText(intent.getStringExtra(DiagnosticsService.ECU_ID_STRING));
                 schedulePolling();
-            } else if(intent.getAction() == MEASUREMENT_RESP) {
+            } else if(intent.getAction().equals(ECU_RESP)) {
                 TextView valueView = (TextView)findViewById(R.id.valueValue);
                 ParcelableMeasurementValues values = intent.getParcelableExtra(DiagnosticsService.VALUE_STRING);
                 valueView.setText(values.measurementValues.get(0).stringValue);
                 valueView = (TextView)findViewById(R.id.valueLabel);
                 valueView.setText(values.measurementValues.get(0).stringLabel);
+            } else if(intent.getAction().equals(FAILURE_RESP)) {
+                Toast.makeText(getApplicationContext(), "ERROR! " + intent.getStringExtra(DiagnosticsService.ERROR_STRING), Toast.LENGTH_LONG).show();
+                stopConnection();
             }
         }
     }
