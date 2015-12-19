@@ -17,6 +17,7 @@ import android.widget.ToggleButton;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends ActionBarActivity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
@@ -128,6 +129,8 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
     }
 
     private void schedulePolling() {
+        m_pollTemperature.shutdown();
+        m_pollTemperature = Executors.newSingleThreadScheduledExecutor();
         m_pollTemperature.scheduleAtFixedRate
                 (new Runnable() {
                     public void run() {

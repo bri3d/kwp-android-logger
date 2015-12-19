@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Hot Pepper</string>
+    <string name="app_name">Pepper Diagnostics</string>
     <string name="main_activity_name">Transmission Temperature</string>
     <string name="measurement_activity_name">Advanced Measurements</string>
     <string name="not_connected_label">Not Connected</string>

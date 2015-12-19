@@ -127,6 +127,8 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
     }
 
     private void schedulePolling() {
+        m_pollMeasurement.shutdown();
+        m_pollMeasurement = Executors.newSingleThreadScheduledExecutor();
         m_pollMeasurement.scheduleAtFixedRate
                 (new Runnable() {
                     public void run() {
