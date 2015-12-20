@@ -79,6 +79,12 @@ public class DiagnosticsService extends PermanentService {
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        endConnection();
+    }
+
     private void endConnection() {
         try {
             m_kwp.stopSession();

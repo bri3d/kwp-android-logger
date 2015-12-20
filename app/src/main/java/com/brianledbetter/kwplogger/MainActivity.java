@@ -2,11 +2,14 @@ package com.brianledbetter.kwplogger;
 
 import android.app.DialogFragment;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -17,17 +20,18 @@ import android.widget.ToggleButton;
 
 public class MainActivity extends ActionBarActivity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
     DiagnosticReceiver m_receiver = null;
-    boolean m_isConnected = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
+        toggle.setChecked(StateSingleton.getInstance().getIsConnecting());
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    if (!m_isConnected) {
+                    if (!StateSingleton.getInstance().getIsConnecting()) {
+                        StateSingleton.getInstance().setIsConnecting(true);
                         startConnection();
                     }
                 } else {
@@ -96,7 +100,7 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
             startActivityForResult(turnOn, 0);
         }
 
-        Object[] devices = b.getBondedDevices().toArray();
+        Parcelable[] devices = b.getBondedDevices().toArray(new BluetoothDevice[0]);
         if (devices.length > 0) {
             BluetoothPickerDialogFragment bpdf = new BluetoothPickerDialogFragment();
             bpdf.mPossibleDevices = devices;
@@ -109,13 +113,14 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
     public void stopConnection() {
         ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
         toggle.setChecked(false);
-        m_isConnected = false;
+        StateSingleton.getInstance().setIsConnected(false);
+        StateSingleton.getInstance().setIsConnecting(false);
         Intent stopIntent = new Intent(this, PollingService.class);
         stopIntent.setAction(PollingService.STOP_POLL_DIAGNOSTICS_SERVICE);
-        stopService(stopIntent);
+        startService(stopIntent);
         Intent stopBluetoothIntent = new Intent(this, DiagnosticsService.class);
         stopBluetoothIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
-        stopService(stopBluetoothIntent);
+        startService(stopBluetoothIntent);
     }
 
     private void registerReceivers() {
@@ -132,7 +137,7 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
     }
 
     private void schedulePolling() {
-        if (!m_isConnected) return;
+        if (!StateSingleton.getInstance().getIsConnected()) return;
         Intent startIntent = new Intent(getApplicationContext(), PollingService.class);
         startIntent.setAction(PollingService.START_POLL_DIAGNOSTICS_SERVICE);
         startIntent.putExtra(PollingService.MEASUREMENT_GROUP, 0x6);
@@ -149,7 +154,7 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
             if (intent.getAction().equals(ECU_RESP)) {
                 TextView ecuIDView = (TextView)findViewById(R.id.partNumber);
                 ecuIDView.setText(intent.getStringExtra(DiagnosticsService.ECU_ID_STRING));
-                m_isConnected = true;
+                StateSingleton.getInstance().setIsConnected(true);
                 schedulePolling();
             } else if(intent.getAction().equals(MEASUREMENT_RESP)) {
                 TextView valueView = (TextView)findViewById(R.id.valueValue);

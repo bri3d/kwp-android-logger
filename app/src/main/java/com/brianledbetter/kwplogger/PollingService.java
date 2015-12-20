@@ -29,6 +29,7 @@ public class PollingService extends PermanentService {
         if (intent.getAction().equals(START_POLL_DIAGNOSTICS_SERVICE)) {
             m_pollTemperature.shutdownNow();
             m_pollTemperature = Executors.newSingleThreadScheduledExecutor();
+            m_measurementGroup = intent.getIntExtra(MEASUREMENT_GROUP, 1);
             m_pollTemperature.scheduleAtFixedRate
                     (new Runnable() {
                         public void run() {
@@ -41,7 +42,8 @@ public class PollingService extends PermanentService {
         }
         if (intent.getAction().equals(STOP_POLL_DIAGNOSTICS_SERVICE)) {
             m_pollTemperature.shutdownNow();
-            m_pollTemperature = Executors.newSingleThreadScheduledExecutor();
+            stopSelf();
+
         }
     }
 }

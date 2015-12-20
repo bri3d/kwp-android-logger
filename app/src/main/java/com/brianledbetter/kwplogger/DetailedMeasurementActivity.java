@@ -3,11 +3,13 @@ package com.brianledbetter.kwplogger;
 import android.app.Activity;
 import android.app.DialogFragment;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.view.Menu;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -28,17 +30,18 @@ import java.util.concurrent.TimeUnit;
 public class DetailedMeasurementActivity extends Activity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
     private DiagnosticReceiver m_receiver = null;
     private int m_selectedMeasurementGroup = 1;
-    private boolean m_isConnected;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_measurement);
         ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
+        toggle.setChecked(StateSingleton.getInstance().getIsConnecting());
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    if (!m_isConnected) {
+                    if (!StateSingleton.getInstance().getIsConnecting()) {
+                        StateSingleton.getInstance().setIsConnecting(true);
                         startConnection();
                     }
                 } else {
@@ -102,7 +105,7 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
             startActivityForResult(turnOn, 0);
         }
 
-        Object[] devices = b.getBondedDevices().toArray();
+        BluetoothDevice[] devices = b.getBondedDevices().toArray(new BluetoothDevice[0]);
 
         BluetoothPickerDialogFragment bpdf = new BluetoothPickerDialogFragment();
         bpdf.mPossibleDevices = devices;
@@ -110,13 +113,14 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
     }
 
     public void stopConnection() {
-        m_isConnected = false;
+        StateSingleton.getInstance().setIsConnected(false);
+        StateSingleton.getInstance().setIsConnecting(false);
         Intent stopIntent = new Intent(this, PollingService.class);
         stopIntent.setAction(PollingService.STOP_POLL_DIAGNOSTICS_SERVICE);
-        stopService(stopIntent);
+        startService(stopIntent);
         Intent stopBluetoothIntent = new Intent(this, DiagnosticsService.class);
         stopBluetoothIntent.setAction(DiagnosticsService.END_DIAGNOSTICS_SERVICE);
-        stopService(stopBluetoothIntent);
+        startService(stopBluetoothIntent);
     }
 
     private void registerReceivers() {
@@ -133,7 +137,7 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
     }
 
     private void schedulePolling() {
-        if (!m_isConnected) return;
+        if (!StateSingleton.getInstance().getIsConnected()) return;
         Intent startIntent = new Intent(getApplicationContext(), PollingService.class);
         startIntent.setAction(PollingService.START_POLL_DIAGNOSTICS_SERVICE);
         startIntent.putExtra(PollingService.MEASUREMENT_GROUP, m_selectedMeasurementGroup);
@@ -150,7 +154,7 @@ public class DetailedMeasurementActivity extends Activity implements BluetoothPi
             if (intent.getAction().equals(ECU_RESP)) {
                 TextView ecuIDView = (TextView)findViewById(R.id.partNumber);
                 ecuIDView.setText(intent.getStringExtra(DiagnosticsService.ECU_ID_STRING));
-                m_isConnected = true;
+                StateSingleton.getInstance().setIsConnected(true);
                 schedulePolling();
             } else if(intent.getAction().equals(MEASUREMENT_RESP)) {
                 ParcelableMeasurementValues values = intent.getParcelableExtra(DiagnosticsService.VALUE_STRING);

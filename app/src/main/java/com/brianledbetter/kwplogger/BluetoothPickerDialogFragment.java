@@ -7,13 +7,14 @@ import android.app.DialogFragment;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Parcelable;
 
 /**
  * Created by b3d on 12/19/15.
  */
 public class BluetoothPickerDialogFragment extends DialogFragment {
     public String mSelectedDevice;
-    public Object[] mPossibleDevices;
+    public Parcelable[] mPossibleDevices;
     BluetoothDialogListener mListener;
 
     public interface BluetoothDialogListener {
@@ -34,6 +35,9 @@ public class BluetoothPickerDialogFragment extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            mPossibleDevices = savedInstanceState.getParcelableArray("bluetoothDevices");
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         CharSequence[] bluetoothDevices = new CharSequence[mPossibleDevices.length];
         for (int i = 0; i < mPossibleDevices.length; i++) {
@@ -62,5 +66,11 @@ public class BluetoothPickerDialogFragment extends DialogFragment {
                     }
                 });
         return builder.create();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArray("bluetoothDevices", mPossibleDevices);
     }
 }
