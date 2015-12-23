@@ -30,6 +30,7 @@ public class DiagnosticsService extends PermanentService {
     public static final String POLL_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.PollService";
     public static final String END_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.EndService";
     public static final String READ_CODES_SERVICE = "com.brianledbetter.kwplogger.ReadCodesService";
+    public static final String RESET_CLUSTER_SERVICE = "com.brianledbetter.kwplogger.ResetClusterService";
 
     public static final String ECU_ID_STRING = "ecuID";
     public static final String VALUE_STRING = "value";
@@ -83,6 +84,10 @@ public class DiagnosticsService extends PermanentService {
         if (intent.getAction().equals(READ_CODES_SERVICE)) {
             Log.d("KWP", "Reading Codes");
             readCodes();
+        }
+        if (intent.getAction().equals(RESET_CLUSTER_SERVICE)) {
+            Log.d("KWP", "Resetting cluster...");
+            resetCluster(intent.getStringExtra(BLUETOOTH_DEVICE));
         }
     }
 
@@ -235,7 +240,20 @@ public class DiagnosticsService extends PermanentService {
 
         } catch (KWPException e)
         {
-            Log.d("KWP", "Failed to read DTCs due to " + e.toString());
+            broadcastError("Issue reading DTCs. Is the key on? " + e.toString());
+        }
+    }
+
+    private void resetCluster(String bluetoothDevice) {
+        int initAddress = 0x61;
+        int remoteAddress = 0x97;
+        startConnection(initAddress, remoteAddress, bluetoothDevice);
+        if(m_kwp == null) return;
+        try {
+            m_kwp.clearCayenneClusterServiceIndicator();
+        } catch (KWPException e)
+        {
+            broadcastError("Issue clearing cluster. Is the key on? " + e.toString());
         }
     }
 

@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by b3d on 12/7/15.
  */
-public class DetailedMeasurementActivity extends Activity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
+public class DetailedMeasurementActivity extends ActionBarActivity implements BluetoothPickerDialogFragment.BluetoothDialogListener {
     private DiagnosticReceiver m_receiver = null;
     private int m_selectedMeasurementGroup = 1;
 

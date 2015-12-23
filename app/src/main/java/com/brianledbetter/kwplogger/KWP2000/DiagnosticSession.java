@@ -197,4 +197,46 @@ public class DiagnosticSession {
         byte[] resultingBytes = m_IO.readBytes();
         return (resultingBytes[0] == (byte)0x6C); // 6C : Positive response status
     }
+
+    public boolean startLocalRoutine(byte localRoutine, byte[] params) throws KWPException {
+        byte[] byteBuffer = new byte[params.length + 2];
+        byteBuffer[0] = (byte)0x31; // KWP2000 startLocalRoutineByIdentifier
+        byteBuffer[1] = localRoutine;
+        System.arraycopy(params, 0, byteBuffer, 2, params.length);
+        m_IO.writeBytes(byteBuffer);
+        return(m_IO.readBytes()[0] != (byte)0x7F);
+    }
+
+    public boolean sendTesterPresent() throws KWPException {
+        byte[] byteBuffer = new byte[] { (byte)0x3E };
+        m_IO.writeBytes(byteBuffer);
+        return(m_IO.readBytes()[0] != (byte)0x7F);
+    }
+
+    public boolean clearCayenneClusterServiceIndicator() throws KWPException {
+        byte[] startB8Routine = new byte[] {(byte)0x1,(byte)0x3};
+        byte[] startBARoutine = new byte[] {(byte)0x1,(byte)0x3};
+        byte[] startB9Routine = new byte[] {(byte)0x1,(byte)0x3,(byte)0x2};
+        byte[] startB9Routine2 = new byte[] {(byte)0x1,(byte)0x3,(byte)0x0,(byte)0x0};
+        byte[] startBBRoutine = new byte[] {(byte)0x1,(byte)0x3,(byte)0x0,(byte)0x0,(byte)0x0,(byte)0x0,(byte)0x4,(byte)0x50,(byte)0x10,(byte)0x34};
+        // must be connected to K2 line init 0x61 addr 0x97 : instrument cluster
+        byte[] byteBuffer = new byte[] { (byte)0x81 }; // startCommunication
+        m_IO.writeBytes(byteBuffer);
+        m_IO.readBytes();
+        boolean flag = true;
+        flag &= startLocalRoutine((byte)0xB8, startB8Routine);
+        flag &= startLocalRoutine((byte)0xBA, startBARoutine);
+        flag &= startLocalRoutine((byte)0xB9, startB9Routine);
+        flag &= startLocalRoutine((byte)0xBA, startBARoutine);
+        flag &= startLocalRoutine((byte)0xB9, startB9Routine2);
+        flag &= startLocalRoutine((byte)0xBA, startBARoutine);
+        flag &= startLocalRoutine((byte)0xBB, startBBRoutine);
+        flag &= startLocalRoutine((byte)0xBA, startBARoutine);
+        flag &= startLocalRoutine((byte)0xB8, startB8Routine);
+        if(!flag) return false;
+        byteBuffer = new byte[] { (byte)0x82 }; // endCommunication
+        m_IO.writeBytes(byteBuffer);
+        m_IO.readBytes();
+        return true;
+    }
 }

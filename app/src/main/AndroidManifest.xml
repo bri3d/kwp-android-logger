@@ -35,6 +35,14 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ResetClusterActivity"
+            android:label="@string/reset_cluster_label">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <service
             android:name="com.brianledbetter.kwplogger.DiagnosticsService"
             android:exported="false" />

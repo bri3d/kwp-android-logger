@@ -293,11 +293,18 @@ public class MeasurementValue {
                     return new MeasurementValue(Double.toString(out), "deg k/w");
                 }
             });
-            put((byte)0x27, new MeasurementValueParser() {
+            put((byte)0x36, new MeasurementValueParser() {
                 @Override
                 public MeasurementValue parseBytes(int[] bytes) {
-                    double out = (bytes[1] / 256) * bytes[0];
-                    return new MeasurementValue(Double.toString(out), "mg/h");
+                    double out = (bytes[0] * 256) + bytes[1];
+                    return new MeasurementValue(Double.toString(out), "Count");
+                }
+            });
+            put((byte)0x37, new MeasurementValueParser() {
+                @Override
+                public MeasurementValue parseBytes(int[] bytes) {
+                    double out = bytes[0] * bytes[1] / 200.0;
+                    return new MeasurementValue(Double.toString(out), "s");
                 }
             });
         }

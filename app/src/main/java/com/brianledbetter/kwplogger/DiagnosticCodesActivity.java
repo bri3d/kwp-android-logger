@@ -94,7 +94,7 @@ public class DiagnosticCodesActivity extends ListActivity implements BluetoothPi
     }
 
     public void stopConnection() {
-        ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
+        ToggleButton toggle = (ToggleButton) findViewById(R.id.toggleButton);
         toggle.setChecked(false);
         StateSingleton.getInstance().setIsConnected(false);
         StateSingleton.getInstance().setIsConnecting(false);
@@ -115,7 +115,7 @@ public class DiagnosticCodesActivity extends ListActivity implements BluetoothPi
 
     @Override
     public void onDialogNegativeClick(DialogFragment dialog) {
-        ToggleButton toggle = (ToggleButton) findViewById(R.id.connectionToggle);
+        ToggleButton toggle = (ToggleButton) findViewById(R.id.toggleButton);
         toggle.setChecked(false);
     }
 

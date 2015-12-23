@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v7.app.ActionBarActivity;
@@ -74,6 +73,12 @@ public class MainActivity extends ActionBarActivity implements BluetoothPickerDi
 
         if (id == R.id.action_dtcs) {
             Intent intent = new Intent(this, DiagnosticCodesActivity.class);
+            startActivity(intent);
+            return true;
+        }
+
+        if (id == R.id.action_reset) {
+            Intent intent = new Intent(this, ResetClusterActivity.class);
             startActivity(intent);
             return true;
         }
