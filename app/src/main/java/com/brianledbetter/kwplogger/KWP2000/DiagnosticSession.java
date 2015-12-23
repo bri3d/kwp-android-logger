@@ -142,6 +142,42 @@ public class DiagnosticSession {
             throw new KWPException("Failed to read memory : " + HexUtil.bytesToHexString(resultingBytes));
         }
     }
+
+    public List<DiagnosticTroubleCode> readDTCs() throws KWPException {
+        byte[] byteBuffer = new byte[] {(byte) 0x18, (byte) 0x00, (byte) 0xff, (byte) 0x00};
+        m_IO.writeBytes(byteBuffer);
+        byte[] resultingBytes = m_IO.readBytes();
+        if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
+        {
+            return parseDTCs(resultingBytes);
+        } else {
+            throw new KWPException("Failed to read DTCs " + HexUtil.bytesToHexString(resultingBytes));
+        }
+    }
+
+    private List<DiagnosticTroubleCode> parseDTCs(byte[] resultBytes) {
+        List<DiagnosticTroubleCode> storedDTCs = new ArrayList<DiagnosticTroubleCode>();
+        if(!(resultBytes[0] == (byte) 0x7F)) { // Do not run on a negative response
+            for(int i = 2; i < resultBytes.length - 3; i+= 3) { // Returned values should be 3 bytes
+                byte[] blockByteValue = Arrays.copyOfRange(resultBytes, i, i + 3);
+                storedDTCs.add(DiagnosticTroubleCode.parseDTC(blockByteValue));
+            }
+        }
+        return storedDTCs;
+    }
+
+    public boolean clearDTCs() throws KWPException {
+        byte[] byteBuffer = new byte[] {(byte) 0x14, (byte) 0xff, (byte) 0x00};
+        m_IO.writeBytes(byteBuffer);
+        byte[] resultingBytes = m_IO.readBytes();
+        if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
+        {
+            return true;
+        } else {
+            throw new KWPException("Failed to clear DTCs " + HexUtil.bytesToHexString(resultingBytes));
+        }
+    }
+
     public boolean writeDynamicallyDefinedIdentifier(int numberOfRecords, int ddliNumber, byte[] byteLengths, int[] byteAddresses) throws KWPException {
         if(!m_connected || numberOfRecords > 20 || ddliNumber > 15 || byteAddresses.length > numberOfRecords)
             return false;

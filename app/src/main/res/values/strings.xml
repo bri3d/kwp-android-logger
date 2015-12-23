@@ -2,6 +2,7 @@
     <string name="app_name">Pepper Diagnostics</string>
     <string name="main_activity_name">Transmission Temperature</string>
     <string name="measurement_activity_name">Advanced Measurements</string>
+    <string name="dtc_activity_name">Trouble Codes</string>
     <string name="not_connected_label">Not Connected</string>
     <string name="transmission_temperature_label">Transmission Temperature</string>
     <string name="part_number_label">Part Number</string>
@@ -15,4 +16,7 @@
     <string name="pick_bluetooth">Select ELM327</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="fetch_codes">Fetch Codes</string>
+    <string name="fetching_codes">Fetching Codes...</string>
+    <string name="action_dtcs">Trouble Codes</string>
 </resources>

@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.brianledbetter.kwplogger.KWP2000.DiagnosticSession;
+import com.brianledbetter.kwplogger.KWP2000.DiagnosticTroubleCode;
 import com.brianledbetter.kwplogger.KWP2000.ECUIdentification;
 import com.brianledbetter.kwplogger.KWP2000.ELMIO;
 import com.brianledbetter.kwplogger.KWP2000.HexUtil;
@@ -28,9 +29,11 @@ public class DiagnosticsService extends PermanentService {
     public static final String READ_MEMORY_SERVICE = "com.brianledbetter.kwplogger.ReadMemoryService";
     public static final String POLL_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.PollService";
     public static final String END_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.EndService";
+    public static final String READ_CODES_SERVICE = "com.brianledbetter.kwplogger.ReadCodesService";
 
     public static final String ECU_ID_STRING = "ecuID";
     public static final String VALUE_STRING = "value";
+    public static final String CODES_STRING = "codes";
 
     public static final String MEASUREMENT_GROUP = "measurementGroup";
     public static final String MEMORY_ADDRESS = "memoryAddress";
@@ -76,6 +79,10 @@ public class DiagnosticsService extends PermanentService {
             int address = intent.getIntExtra(MEMORY_ADDRESS, 0x1);
             int size = intent.getIntExtra(MEMORY_SIZE, 0x1);
             readMemory(address, size);
+        }
+        if (intent.getAction().equals(READ_CODES_SERVICE)) {
+            Log.d("KWP", "Reading Codes");
+            readCodes();
         }
     }
 
@@ -211,6 +218,24 @@ public class DiagnosticsService extends PermanentService {
         } catch (KWPException e)
         {
             Log.d("KWP", "Failed to read memory due to " + e.toString());
+        }
+    }
+
+    private void readCodes() {
+        if(!m_isConnected) {
+            return;
+        }
+        try {
+            List<DiagnosticTroubleCode> dtcs = m_kwp.readDTCs();
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(DiagnosticCodesActivity.DiagnosticReceiver.CODES_RESP);
+            broadcastIntent.putExtra(VALUE_STRING, new ParcelableDTC(dtcs));
+            broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
+            sendBroadcast(broadcastIntent);
+
+        } catch (KWPException e)
+        {
+            Log.d("KWP", "Failed to read DTCs due to " + e.toString());
         }
     }
 
