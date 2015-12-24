@@ -16,5 +16,6 @@
         android:id="@+id/action_reset"
         android:orderInCategory="100"
         android:title="@string/reset_cluster_label"
+        android:enabled="false"
         app:showAsAction="never" />
 </menu>
