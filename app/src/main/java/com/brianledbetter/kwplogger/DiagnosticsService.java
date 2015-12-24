@@ -30,6 +30,7 @@ public class DiagnosticsService extends PermanentService {
     public static final String POLL_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.PollService";
     public static final String END_DIAGNOSTICS_SERVICE = "com.brianledbetter.kwplogger.EndService";
     public static final String READ_CODES_SERVICE = "com.brianledbetter.kwplogger.ReadCodesService";
+    public static final String CLEAR_CODES_SERVICE = "com.brianledbetter.kwplogger.ClearCodesService";
     public static final String RESET_CLUSTER_SERVICE = "com.brianledbetter.kwplogger.ResetClusterService";
 
     public static final String ECU_ID_STRING = "ecuID";
@@ -84,6 +85,10 @@ public class DiagnosticsService extends PermanentService {
         if (intent.getAction().equals(READ_CODES_SERVICE)) {
             Log.d("KWP", "Reading Codes");
             readCodes();
+        }
+        if (intent.getAction().equals(CLEAR_CODES_SERVICE)) {
+            Log.d("KWP", "Clearing Codes");
+            clearCodes();
         }
         if (intent.getAction().equals(RESET_CLUSTER_SERVICE)) {
             Log.d("KWP", "Resetting cluster...");
@@ -241,6 +246,20 @@ public class DiagnosticsService extends PermanentService {
         } catch (KWPException e)
         {
             broadcastError("Issue reading DTCs. Is the key on? " + e.toString());
+        }
+    }
+
+    private void clearCodes() {
+        if(!m_isConnected) {
+            return;
+        }
+        try {
+            m_kwp.clearDTCs();
+            readCodes();
+
+        } catch (KWPException e)
+        {
+            broadcastError("Issue clearing DTCs. Is the key on? " + e.toString());
         }
     }
 

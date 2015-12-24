@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
@@ -120,6 +122,29 @@ public class DiagnosticCodesActivity extends ListActivity implements BluetoothPi
     public void onDialogNegativeClick(DialogFragment dialog) {
         ToggleButton toggle = (ToggleButton) findViewById(R.id.toggleButton);
         toggle.setChecked(false);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_codes, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        if (id == R.id.action_codes) {
+            Intent codesIntent = new Intent(DiagnosticCodesActivity.this, DiagnosticsService.class);
+            codesIntent.setAction(DiagnosticsService.CLEAR_CODES_SERVICE);
+            startService(codesIntent);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     public class DiagnosticReceiver extends BroadcastReceiver {
