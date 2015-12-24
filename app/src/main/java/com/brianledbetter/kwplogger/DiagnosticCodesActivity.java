@@ -68,11 +68,14 @@ public class DiagnosticCodesActivity extends ListActivity implements BluetoothPi
     private void registerReceivers() {
         IntentFilter dataFilter = new IntentFilter(DiagnosticReceiver.CODES_RESP);
         dataFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        IntentFilter ecuFilter = new IntentFilter(DiagnosticReceiver.ECU_RESP);
+        ecuFilter.addCategory(Intent.CATEGORY_DEFAULT);
         IntentFilter failureFilter = new IntentFilter(DiagnosticReceiver.FAILURE_RESP);
         failureFilter.addCategory(Intent.CATEGORY_DEFAULT);
         m_receiver = new DiagnosticReceiver();
         registerReceiver(m_receiver, dataFilter);
         registerReceiver(m_receiver, failureFilter);
+        registerReceiver(m_receiver, ecuFilter);
     }
 
     public void startConnection() {

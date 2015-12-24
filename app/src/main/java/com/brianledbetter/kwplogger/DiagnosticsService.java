@@ -234,7 +234,7 @@ public class DiagnosticsService extends PermanentService {
             List<DiagnosticTroubleCode> dtcs = m_kwp.readDTCs();
             Intent broadcastIntent = new Intent();
             broadcastIntent.setAction(DiagnosticCodesActivity.DiagnosticReceiver.CODES_RESP);
-            broadcastIntent.putExtra(VALUE_STRING, new ParcelableDTC(dtcs));
+            broadcastIntent.putExtra(CODES_STRING, new ParcelableDTC(dtcs));
             broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
             sendBroadcast(broadcastIntent);
 
