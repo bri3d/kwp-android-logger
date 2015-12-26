@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.widget.Button;
 
 /**
  * Created by b3d on 12/19/15.
@@ -16,10 +17,25 @@ public class BluetoothPickerDialogFragment extends DialogFragment {
     public String mSelectedDevice;
     public Parcelable[] mPossibleDevices;
     BluetoothDialogListener mListener;
+    Button mOKButton;
 
     public interface BluetoothDialogListener {
         public void onDialogPositiveClick(DialogFragment dialog, String selectedDevice);
         public void onDialogNegativeClick(DialogFragment dialog);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        AlertDialog d = (AlertDialog) getDialog();
+        if (d != null) {
+            mOKButton = d.getButton(Dialog.BUTTON_POSITIVE);
+            if (mPossibleDevices.length > 0)
+                mOKButton.setEnabled(true);
+            else
+                mOKButton.setEnabled(false);
+        }
+
     }
 
     @Override

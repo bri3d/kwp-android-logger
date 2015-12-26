@@ -224,15 +224,16 @@ public class DiagnosticSession {
         m_IO.writeBytes(byteBuffer);
         m_IO.readBytes();
         boolean flag = true;
-        flag &= startLocalRoutine((byte)0xB8, startB8Routine);
-        flag &= startLocalRoutine((byte)0xBA, startBARoutine);
-        flag &= startLocalRoutine((byte)0xB9, startB9Routine);
-        flag &= startLocalRoutine((byte)0xBA, startBARoutine);
-        flag &= startLocalRoutine((byte)0xB9, startB9Routine2);
-        flag &= startLocalRoutine((byte)0xBA, startBARoutine);
-        flag &= startLocalRoutine((byte)0xBB, startBBRoutine);
-        flag &= startLocalRoutine((byte)0xBA, startBARoutine);
-        flag &= startLocalRoutine((byte)0xB8, startB8Routine);
+        // This procedure writes 0x0 into adaptation channel 0x2, which appears to reset?
+        flag &= startLocalRoutine((byte)0xB8, startB8Routine); // Start Adaptation
+        flag &= startLocalRoutine((byte)0xBA, startBARoutine); // Read
+        flag &= startLocalRoutine((byte)0xB9, startB9Routine); // Select channel 2
+        flag &= startLocalRoutine((byte)0xBA, startBARoutine); // Read
+        flag &= startLocalRoutine((byte)0xB9, startB9Routine2); // Write data 00 00
+        flag &= startLocalRoutine((byte)0xBA, startBARoutine); // Read
+        flag &= startLocalRoutine((byte)0xBB, startBBRoutine); // Validate data - 2 bytes are data, last 6 are derived from return of 0x1A 0x9B ident, which is static for this module so hardcoded
+        flag &= startLocalRoutine((byte)0xBA, startBARoutine); // Read
+        flag &= startLocalRoutine((byte)0xB8, startB8Routine); // I think we should actually be calling stopLocalRoutine here...
         if(!flag) return false;
         byteBuffer = new byte[] { (byte)0x82 }; // endCommunication
         m_IO.writeBytes(byteBuffer);
