@@ -1,18 +1,19 @@
 package com.brianledbetter.kwplogger.KWP2000;
 
-import android.util.Log;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by b3d on 12/2/15.
  */
 public class ELMIO implements KWP2000IO {
+    private static final Logger LOGGER = Logger.getAnonymousLogger();
     private static final byte ELM_TERMINAL = '>';
     private static final long TIMEOUT = 10000;
     private InputStream m_in;
@@ -57,8 +58,8 @@ public class ELMIO implements KWP2000IO {
                 return;
             }
         }
-        Log.d("ELMIO", "Failed to get an OK out of " + m_inputLines.toString());
-        throw new KWPException("Failed to get an OK response from ELM!");
+        LOGGER.log(Level.INFO, "Failed to get an OK out of " + m_inputLines.toString());
+        throw new KWPException("Failed to get an OK response from ELM!" + m_inputLines.toString());
     }
 
     @Override
@@ -72,7 +73,7 @@ public class ELMIO implements KWP2000IO {
                     // This is here because sometimes ELM likes to tell us random human-readable garbage (SEARCHING..., NO DATA, etc.)
                     byte[] candidate = parseByteLine(line);
                     if (candidate.length > 0) {
-                        Log.d("ELMIO", "Got bytes from line " + HexUtil.bytesToHexString(candidate));
+                        LOGGER.log(Level.INFO, "Got bytes from line " + HexUtil.bytesToHexString(candidate));
                         m_inputLines.remove(line);
                         return candidate;
                     }
@@ -82,17 +83,17 @@ public class ELMIO implements KWP2000IO {
                 break;
             bufferData();
         }
-        Log.d("ELMIO", "Read timed out " + m_inputLines.toString());
+        LOGGER.log(Level.INFO, "Read timed out " + m_inputLines.toString());
         throw new KWPException("Reading data timed out.");
     }
 
     public boolean writeString(String stringToWrite) {
         try {
             m_out.write((stringToWrite + "\r").getBytes(Charset.forName("US-ASCII")));
-            Log.d("ELMIO", "Sent string data " + stringToWrite);
+            LOGGER.log(Level.INFO, "Sent string data " + stringToWrite);
             return true;
         } catch (IOException e) {
-            Log.d("ELMIO", "Failed to send " + e.toString());
+            LOGGER.log(Level.INFO, "Failed to send " + e.toString());
             return false;
         }
     }
@@ -102,9 +103,9 @@ public class ELMIO implements KWP2000IO {
         final String hexString = HexUtil.bytesToHexString(bytesToWrite);
         try {
             m_out.write(hexString.getBytes(Charset.forName("US-ASCII")));
-            Log.d("ELMIO", "Sent byte data " + hexString);
+            LOGGER.log(Level.INFO, "Sent byte data " + hexString);
         } catch (IOException e) {
-            Log.d("ELMIO", "Failed to send byte data " + e.toString());
+            LOGGER.log(Level.INFO, "Failed to send byte data " + e.toString());
             throw new KWPException("Failed to write ELM byte data to stream!");
         }
     }
@@ -127,7 +128,7 @@ public class ELMIO implements KWP2000IO {
                 }
                 inputBuffer.append((char)dataIn);
             } catch (IOException e) {
-                Log.d("ELMIO", "Failed to read " + e.getMessage());
+                LOGGER.log(Level.INFO, "Failed to read " + e.getMessage());
                 throw new KWPException("Failed to read from buffer!");
             }
         }
@@ -135,7 +136,7 @@ public class ELMIO implements KWP2000IO {
         for (String line : currentLines) {
             if (line.trim().length() > 0) {
                 m_inputLines.add(line.trim());
-                Log.d("ELMIO", "Added line to output buffer: " + line);
+                LOGGER.log(Level.INFO, "Added line to output buffer: " + line);
             }
         }
     }
