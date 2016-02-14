@@ -264,11 +264,12 @@ public class DiagnosticsService extends PermanentService {
     }
 
     private void resetCluster(String bluetoothDevice) {
-        int initAddress = 0x61;
-        int remoteAddress = 0x97;
+        int initAddress = 0x97;
+        int remoteAddress = 0x61;
         startConnection(initAddress, remoteAddress, bluetoothDevice);
         if(m_kwp == null) return;
         try {
+            Log.d("KWP", "Preparing to reset service indicator...");
             m_kwp.clearCayenneClusterServiceIndicator();
         } catch (KWPException e)
         {

@@ -38,6 +38,8 @@ public class ELMIO implements KWP2000IO {
             readOK();
             writeString("AT AL"); // Allow long messages
             readOK();
+            writeString("AT ST FF"); // Timeout to maximum
+            readOK();
             writeString("AT SP 0"); // Autodetect protocol
             readOK();
             writeString("AT IIA " + controllerString); // Set KWP initialization address to address
@@ -59,7 +61,7 @@ public class ELMIO implements KWP2000IO {
             }
         }
         LOGGER.log(Level.INFO, "Failed to get an OK out of " + m_inputLines.toString());
-        throw new KWPException("Failed to get an OK response from ELM!" + m_inputLines.toString());
+        throw new KWPException("Invalid response from ELM327. Possible counterfeit? " + m_inputLines.toString());
     }
 
     @Override

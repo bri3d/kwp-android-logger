@@ -22,7 +22,7 @@ public class DiagnosticSession {
     public int getSeedEcuID() throws KWPException {
         byte[] byteBuffer = new byte[]{(byte) 0x1A, (byte) 0x92}; // SystemSupplierSpecific ECUID request to get vendor partno
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
             byte[] ecuID = Arrays.copyOfRange(resultingBytes, 2, 7);
@@ -40,7 +40,7 @@ public class DiagnosticSession {
     public int getSecurityAccessSeed() throws KWPException {
         byte[] byteBuffer = new byte[]{(byte) 0x27, (byte) 0x01}; // 0x27 0x01 : SecurityAccess Get Seed
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
             byte[] seedBytes = Arrays.copyOfRange(resultingBytes, 2, 6);
@@ -54,7 +54,7 @@ public class DiagnosticSession {
         // 0x27 0x02 : SecurityAccess Log In
         byte[] byteBuffer = new byte[] {(byte) 0x27, (byte) 0x02, (byte)((key >> 24 ) & 0xff), (byte)((key >> 16 ) & 0xff), (byte)((key >> 8 ) & 0xff), (byte)(key & 0xff)};
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
            return true;
@@ -66,7 +66,7 @@ public class DiagnosticSession {
     public boolean stopSession() throws KWPException {
         byte[] byteBuffer = new byte[] {(byte)0x82}; // 0x82 : Log off
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
             m_connected = false;
@@ -79,7 +79,7 @@ public class DiagnosticSession {
     public boolean startSession(byte sessionKind) throws KWPException {
         byte[] byteBuffer = new byte[] {(byte)0x10, sessionKind}; // 0x10 : Initialize Session
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
             m_connected = true;
@@ -99,7 +99,7 @@ public class DiagnosticSession {
     public List<MeasurementValue> readIdentifier(int identifierIndex) throws KWPException {
         byte[] byteBuffer = new byte[] { (byte)0x21, (byte) identifierIndex};
         m_IO.writeBytes(byteBuffer);
-        return parseIdentifierValues(m_IO.readBytes());
+        return parseIdentifierValues(readBytes());
     }
 
     private List<MeasurementValue> parseIdentifierValues(byte[] identifierData) {
@@ -116,25 +116,22 @@ public class DiagnosticSession {
     public ECUIdentification readECUIdentification() throws KWPException {
         byte[] byteBuffer = new byte[] { (byte)0x1A, (byte) 0x9B };
         m_IO.writeBytes(byteBuffer);
-        byte[] byteReturn = m_IO.readBytes();
+        byte[] byteReturn = readBytes();
         if (byteReturn[0] == (byte)0x7F) {
             return null;
         }
-        else
-        {
-            ECUIdentification ecuID = new ECUIdentification();
-            ecuID.hardwareNumber = new String(Arrays.copyOfRange(byteReturn, 2, 12));
-            ecuID.softwareNumber = new String(Arrays.copyOfRange(byteReturn, 13, byteReturn.length));
-            return ecuID;
-        }
 
+        ECUIdentification ecuID = new ECUIdentification();
+        ecuID.hardwareNumber = new String(Arrays.copyOfRange(byteReturn, 2, 12));
+        ecuID.softwareNumber = new String(Arrays.copyOfRange(byteReturn, 13, byteReturn.length));
+        return ecuID;
     }
 
     public byte[] readMemoryByAddress(int address, int bytes) throws KWPException
     {
         byte[] byteBuffer = new byte[] {(byte)0x23, (byte)((address >> 16 ) & 0xff), (byte)((address >> 8 ) & 0xff), (byte)((address) & 0xff), (byte)bytes}; // 0x23 : ReadMemoryAtAddress
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
            return Arrays.copyOfRange(resultingBytes, 2, 2+bytes);
@@ -146,7 +143,7 @@ public class DiagnosticSession {
     public List<DiagnosticTroubleCode> readDTCs() throws KWPException {
         byte[] byteBuffer = new byte[] {(byte) 0x18, (byte) 0x00, (byte) 0xff, (byte) 0x00};
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
             return parseDTCs(resultingBytes);
@@ -169,7 +166,7 @@ public class DiagnosticSession {
     public boolean clearDTCs() throws KWPException {
         byte[] byteBuffer = new byte[] {(byte) 0x14, (byte) 0xff, (byte) 0x00};
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         if (resultingBytes[0] != (byte)0x7F) // 7F : Negative Response
         {
             return true;
@@ -194,7 +191,7 @@ public class DiagnosticSession {
             byteBuffer[(i * 6) + 5] = (byte)((byteAddresses[i]) & 0xFF); // Low byte
         }
         m_IO.writeBytes(byteBuffer);
-        byte[] resultingBytes = m_IO.readBytes();
+        byte[] resultingBytes = readBytes();
         return (resultingBytes[0] == (byte)0x6C); // 6C : Positive response status
     }
 
@@ -204,13 +201,13 @@ public class DiagnosticSession {
         byteBuffer[1] = localRoutine;
         System.arraycopy(params, 0, byteBuffer, 2, params.length);
         m_IO.writeBytes(byteBuffer);
-        return(m_IO.readBytes()[0] != (byte)0x7F);
+        return(readBytes()[0] != (byte)0x7F);
     }
 
     public boolean sendTesterPresent() throws KWPException {
         byte[] byteBuffer = new byte[] { (byte)0x3E };
         m_IO.writeBytes(byteBuffer);
-        return(m_IO.readBytes()[0] != (byte)0x7F);
+        return(readBytes()[0] != (byte)0x7F);
     }
 
     public boolean clearCayenneClusterServiceIndicator() throws KWPException {
@@ -219,25 +216,28 @@ public class DiagnosticSession {
         byte[] startB9Routine = new byte[] {(byte)0x1,(byte)0x3,(byte)0x2};
         byte[] startB9Routine2 = new byte[] {(byte)0x1,(byte)0x3,(byte)0x0,(byte)0x0};
         byte[] startBBRoutine = new byte[] {(byte)0x1,(byte)0x3,(byte)0x0,(byte)0x0,(byte)0x0,(byte)0x0,(byte)0x4,(byte)0x50,(byte)0x10,(byte)0x34};
-        // must be connected to K2 line init 0x61 addr 0x97 : instrument cluster
-        byte[] byteBuffer = new byte[] { (byte)0x81 }; // startCommunication
-        m_IO.writeBytes(byteBuffer);
-        m_IO.readBytes();
         boolean flag = true;
         // This procedure writes 0x0 into adaptation channel 0x2, which appears to reset?
         flag &= startLocalRoutine((byte)0xB8, startB8Routine); // Start Adaptation
         flag &= startLocalRoutine((byte)0xBA, startBARoutine); // Read
         flag &= startLocalRoutine((byte)0xB9, startB9Routine); // Select channel 2
         flag &= startLocalRoutine((byte)0xBA, startBARoutine); // Read
-        flag &= startLocalRoutine((byte)0xB9, startB9Routine2); // Write data 00 00
+        flag &= startLocalRoutine((byte)0xB9, startB9Routine2); // Test data 00 00
         flag &= startLocalRoutine((byte)0xBA, startBARoutine); // Read
-        flag &= startLocalRoutine((byte)0xBB, startBBRoutine); // Validate data - 2 bytes are data, last 6 are derived from return of 0x1A 0x9B ident, which is static for this module so hardcoded
+        flag &= startLocalRoutine((byte)0xBB, startBBRoutine); // Save data - 2 bytes are data, last 6 are derived from return of 0x1A 0x9B ident, which is static for this module so hardcoded
         flag &= startLocalRoutine((byte)0xBA, startBARoutine); // Read
         flag &= startLocalRoutine((byte)0xB8, startB8Routine); // I think we should actually be calling stopLocalRoutine here...
         if(!flag) return false;
-        byteBuffer = new byte[] { (byte)0x82 }; // endCommunication
-        m_IO.writeBytes(byteBuffer);
-        m_IO.readBytes();
         return true;
+    }
+
+    private byte[] readBytes() throws KWPException {
+        byte[] responseBytes = m_IO.readBytes();
+        if ((responseBytes.length > 2) && (responseBytes[0] == (byte) 0x7F) && (responseBytes[2] == (byte) 0x78)) {
+            // Control unit said it is busy (7F 78 response) but WILL respond later, so let it do so.
+            return this.readBytes();
+        } else {
+            return responseBytes;
+        }
     }
 }
