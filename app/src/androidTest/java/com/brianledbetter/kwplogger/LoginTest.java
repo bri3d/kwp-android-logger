@@ -1,7 +1,6 @@
 package com.brianledbetter.kwplogger;
 
-import com.brianledbetter.kwplogger.KWP2000.MeasurementValue;
-import com.brianledbetter.kwplogger.KWP2000.VAGSeedKeyLogin;
+import com.brianledbetter.kwplogger.KWP2000.XorSeedKeyLogin;
 
 import junit.framework.TestCase;
 
@@ -15,9 +14,15 @@ public class LoginTest extends TestCase {
         }
 
         public void testLogin() {
-            int ecuID = (0x30 + 0x32 + 0x36 + 0x31 + 0x53) & 0x3F;
-            int seed = 0x01AA20C4;
-            int key = VAGSeedKeyLogin.calculateKey(ecuID, seed);
-            assertEquals(key, 0xB185F96E);
+            int seed = 0x0CF4233D;
+            int ecuID = 63;
+            int key = XorSeedKeyLogin.calculateKey(ecuID,seed);
+            assertEquals(key, 0xC1393A1C);
+            seed = 0x0332952C;
+            key = XorSeedKeyLogin.calculateKey(ecuID,seed);
+            assertEquals(key, 0x6652A580);
+            seed = 0x10667401;
+            key = XorSeedKeyLogin.calculateKey(ecuID,seed);
+            assertEquals(key, 0xB3B43B58);
         }
 }

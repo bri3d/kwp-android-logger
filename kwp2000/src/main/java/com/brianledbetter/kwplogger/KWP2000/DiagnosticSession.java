@@ -92,7 +92,7 @@ public class DiagnosticSession {
     public boolean securityLogin() throws KWPException {
         int ecuID = getSeedEcuID();
         int seed = getSecurityAccessSeed();
-        int key = VAGSeedKeyLogin.calculateKey(ecuID, seed);
+        int key = XorSeedKeyLogin.calculateKey(ecuID, seed);
         return loginWithKey(key);
     }
 

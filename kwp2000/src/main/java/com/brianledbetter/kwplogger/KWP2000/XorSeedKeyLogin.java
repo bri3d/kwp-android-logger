@@ -1,10 +1,11 @@
 package com.brianledbetter.kwplogger.KWP2000;
 
-/**
- * Created by b3d on 12/10/15.
- */
-// Info from http://nefariousmotorsports.com/forum/index.php?topic=4983.0
-public class VAGSeedKeyLogin {
+// I painstakingly reversed this thinking I was doing something new
+// And it turns out to be the same as MED9.1 from http://nefariousmotorsports.com/forum/index.php?topic=4983.0
+// Facepalm...
+public class XorSeedKeyLogin {
+    // I'm not actually sure how to select these. There's some documentation about resolving them from the ecuID in http://nefariousmotorsports.com/forum/index.php?topic=4983.0
+    // But the ECUs I've tested all use the last factor (0x5FBD5DBD) even though their ecuID doesn't calculate to 63 dec...
     private static final int[] SEED_DATA = {
             0x0A221289,0x144890A1,0x24212491,0x290A0285,
             0x42145091,0x504822C1,0x0A24C4C1,0x14252229,
@@ -24,18 +25,14 @@ public class VAGSeedKeyLogin {
             0x5AEDFED5,0x6B5F7DD5,0x6F757B6B,0x5FBD5DBD
     };
     public static int calculateKey(int ecuID, int seed) {
-        for (int i=0; i<5; i++)
-        {
-            if ((seed & 0x80000000) == 0)
-            {
-                seed = (SEED_DATA[ecuID]) ^ (seed << 1);
+        for (byte i = 0; i < 5; i++) {
+            if ((seed & 0x80000000) == 0x80000000) { // Check carry
+                seed = (SEED_DATA[ecuID]) ^ ((seed << 1) | (seed >>> 31)); // rotate left and xor
             }
-            else
-            {
-                seed = (seed << 1);
+            else {
+                seed = ((seed << 1) | (seed >>> 31)); // rotate left only
             }
         }
         return seed;
     }
-
 }

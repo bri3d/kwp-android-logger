@@ -21,7 +21,7 @@ public class LoginIntegrationTest extends TestCase {
         ArrayList<byte[]> writeBytes = new ArrayList<byte[]>();
         writeBytes.add(new byte[]{(byte)0x1A,(byte)0x92});
         writeBytes.add(new byte[]{(byte)0x27,(byte)0x01});
-        writeBytes.add(new byte[] {(byte)0x27,(byte)0x02,(byte)0xB1,(byte)0x85,(byte)0xF9,(byte)0x6E});
+        writeBytes.add(new byte[] {(byte)0x27,(byte)0x02,(byte)0x35,(byte)0x44,(byte)0x18,(byte)0x80});
         readBytes.add(new byte[] {(byte)0x5A,(byte)0x92,(byte)0x30,(byte)0x32,(byte)0x36,(byte)0x31,(byte)0x53});
         readBytes.add(new byte[] {(byte)0x67,(byte)0x01,(byte)0x01,(byte)0xAA,(byte)0x20,(byte)0xC4});
         readBytes.add(new byte[] {(byte)0x67,(byte)0x02});
