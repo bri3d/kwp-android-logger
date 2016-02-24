@@ -180,7 +180,7 @@ public class DiagnosticSession {
             return false;
         // 6 bytes per record, 2 bytes to set up
         byte[] byteBuffer = new byte[(numberOfRecords * 6) + 2];
-        byteBuffer[0] = (byte)0x0C; // 0x0C : KWP2000 DynamicallyDefineLocalIdentifier service
+        byteBuffer[0] = (byte)0x2C; // 0x2C : KWP2000 DynamicallyDefineLocalIdentifier service
         byteBuffer[1] = (byte)(0xF0 + ddliNumber); // 0xF0 + index : DDLI Identifier
         for(int i = 0; i < numberOfRecords; i++) {
             byteBuffer[(i * 6) + 0] = 0x03; // DDLI type 0x3 : Define by Memory Address
@@ -192,7 +192,7 @@ public class DiagnosticSession {
         }
         m_IO.writeBytes(byteBuffer);
         byte[] resultingBytes = readBytes();
-        return (resultingBytes[0] == (byte)0x6C); // 6C : Positive response status
+        return (resultingBytes[0] != (byte)0x7F);
     }
 
     public boolean startLocalRoutine(byte localRoutine, byte[] params) throws KWPException {

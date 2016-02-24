@@ -117,9 +117,9 @@ public class DiagnosticsService extends PermanentService {
         }
     }
 
-    private void startConnection(int initAddress, int remoteAddress, String bluetoothDevice) {
+    private ECUIdentification startConnection(int initAddress, int remoteAddress, String bluetoothDevice) {
         try {
-            if(!connectBluetooth(initAddress, remoteAddress, bluetoothDevice)) return;
+            if(!connectBluetooth(initAddress, remoteAddress, bluetoothDevice)) return null;
             connectKWP2000();
             ECUIdentification ecuID = m_kwp.readECUIdentification();
             Log.d("KWP", "Got string " + ecuID.hardwareNumber + " for hardware number");
@@ -129,9 +129,11 @@ public class DiagnosticsService extends PermanentService {
             broadcastIntent.putExtra(ECU_ID_STRING, ecuID.hardwareNumber);
             broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
             sendBroadcast(broadcastIntent);
+            return ecuID;
         } catch (KWPException e) {
             endConnection();
             broadcastError("Issue opening ECU. Is the key on? " + e.toString());
+            return null;
         }
     }
 
@@ -266,10 +268,10 @@ public class DiagnosticsService extends PermanentService {
     private void resetCluster(String bluetoothDevice) {
         int initAddress = 0x97;
         int remoteAddress = 0x61;
-        startConnection(initAddress, remoteAddress, bluetoothDevice);
-        if(m_kwp == null) return;
+        ECUIdentification identification = startConnection(initAddress, remoteAddress, bluetoothDevice);
+        if(identification == null) return;
         try {
-            Log.d("KWP", "Preparing to reset service indicator...");
+            Log.d("KWP", "Preparing to reset service indicator for cluster " + identification.hardwareNumber);
             m_kwp.clearCayenneClusterServiceIndicator();
         } catch (KWPException e)
         {
